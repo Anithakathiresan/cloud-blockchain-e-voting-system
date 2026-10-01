@@ -42,7 +42,7 @@ export function NoticesPage() {
   }
 
   return (
-    <div className="page-stack narrow">
+    <div className="page-stack">
       <PageIntro
         actions={
           isAdmin &&
@@ -98,7 +98,14 @@ export function NoticesPage() {
           <EmptyState icon={<Megaphone size={22} />} title="No notices yet" copy="Announcements from the election committee will appear here." />
         </Card>
       ) : (
-        <Card flush>
+        <Card
+          flush
+          className="notice-board"
+          title="Notice Board"
+          subtitle={`${notices.length} ${notices.length === 1 ? 'notice' : 'notices'} from the election committee`}
+          icon={<Megaphone size={18} />}
+          tone="amber"
+        >
           <ul className="notice-feed">
             {notices.map((notice) => (
               <li key={notice.id}>
@@ -177,7 +184,7 @@ export function SettingsPage() {
         </div>
       </Card>
 
-      <Card title={t.uiLanguage} subtitle="Navigation and the ballot are translated; some pages remain in English.">
+      <Card title={t.uiLanguage} subtitle={t.settingsLanguageNote}>
         <Field label={t.uiLanguage}>
           {(id) => (
             <select id={id} className="input" value={language} onChange={(event) => setLanguage(event.target.value)}>
@@ -268,31 +275,41 @@ const FAQ = [
 export function HelpPage() {
   const { navigate } = useApp()
   return (
-    <div className="page-stack narrow">
-      <Card title="Frequently asked questions" icon={<LifeBuoy size={18} />}>
-        <div className="faq">
-          {FAQ.map((item) => (
-            <details key={item.q} className="faq-item">
-              <summary>
-                <span>{item.q}</span>
-                <ChevronDown size={18} aria-hidden="true" />
-              </summary>
-              <p>{item.a}</p>
-            </details>
-          ))}
+    <div className="page-stack">
+      <Card
+        flush
+        className="ballot-board"
+        title="Frequently asked questions"
+        subtitle={`${FAQ.length} common questions about voting`}
+        icon={<LifeBuoy size={18} />}
+      >
+        <div className="ballot-board-body">
+          <div className="faq">
+            {FAQ.map((item) => (
+              <details key={item.q} className="faq-item">
+                <summary>
+                  <span>{item.q}</span>
+                  <ChevronDown size={18} aria-hidden="true" />
+                </summary>
+                <p>{item.a}</p>
+              </details>
+            ))}
+          </div>
         </div>
       </Card>
-      <Card title="Still need help?">
-        <KeyValue
-          items={[
-            { icon: <Phone size={15} />, label: 'Election helpdesk', value: '+91 98765 43210' },
-            { icon: <Mail size={15} />, label: 'Email', value: 'support@e-vote.in' },
-          ]}
-        />
-        <div className="form-actions">
-          <button type="button" className="btn btn-secondary" onClick={() => navigate('contact')}>
-            <Send size={16} aria-hidden="true" /> Send a message
-          </button>
+      <Card flush className="ballot-board" title="Still need help?" icon={<Phone size={18} />}>
+        <div className="ballot-board-body">
+          <KeyValue
+            items={[
+              { icon: <Phone size={15} />, label: 'Election helpdesk', value: '+91 98765 43210' },
+              { icon: <Mail size={15} />, label: 'Email', value: 'support@e-vote.in' },
+            ]}
+          />
+          <div className="form-actions">
+            <button type="button" className="btn btn-secondary" onClick={() => navigate('contact')}>
+              <Send size={16} aria-hidden="true" /> Send a message
+            </button>
+          </div>
         </div>
       </Card>
     </div>

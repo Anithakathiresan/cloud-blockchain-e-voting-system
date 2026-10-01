@@ -1,7 +1,7 @@
 // Signed-in home screens: the student dashboard (what do I need to do?), the
 // admin dashboard (what needs attention?) and the profile page.
 
-import { useMemo, useState } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertTriangle,
   ArrowRight,
@@ -22,7 +22,9 @@ import {
   Lock,
   Mail,
   Megaphone,
+  Pause,
   Phone,
+  Play,
   Plus,
   Receipt,
   ShieldCheck,
@@ -37,14 +39,20 @@ import { useApp } from '../context'
 import { academicLine, departmentLabel, yearLabel } from '../college'
 import { compactHash } from '../chain'
 import {
+  IST_ZONE,
+  countdownParts,
   electorateOf,
   formatDate,
+  formatDateTime,
   formatNumber,
   formatPeriod,
+  formatTime,
+  istHour,
   percentOf,
   relativeTime,
   scopeLabel,
 } from '../elections'
+import { countText, dateLocale, fill } from '../locale'
 import { CandidateCard, PositionResults } from '../components/election'
 import {
   Alert,
@@ -60,15 +68,15 @@ import {
 } from '../components/ui'
 import { RejectCandidateModal } from './admin/CandidateManagement'
 
-function greetingFor(t, date = new Date()) {
-  const hour = date.getHours()
+function greetingFor(t) {
+  const hour = istHour()
   if (hour < 12) return t.uiGoodMorning
   if (hour < 17) return t.uiGoodAfternoon
   return t.uiGoodEvening
 }
 
 function todayLabel(date = new Date()) {
-  return date.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  return date.toLocaleDateString(dateLocale(), { timeZone: IST_ZONE, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 // Colour and icon for an activity-log line, read from its wording.
@@ -93,25 +101,237 @@ function byOpenThenStart(state) {
 
 // ------------------------------------------------------------ shared ---
 
+// A clock that re-renders its owner once a second.
+function useSecondClock() {
+  const [clock, setClock] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setClock(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+  return clock
+}
+
+const pad2 = (value) => String(value).padStart(2, '0')
+
+function shortCountdown(t, ms) {
+  const { days, hours, minutes, seconds } = countdownParts(ms)
+  const time = `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`
+  return days ? `${countText(t, 'dashCountdownDaysShort', days)} ${time}` : time
+}
+
+// The live election closing soonest, or else the next one to open, counted
+// down to the second. Other open or upcoming elections are listed below it.
+export function ElectionCountdown({ elections }) {
+  const { t, electionState, navigate, isAdmin } = useApp()
+  const clock = useSecondClock()
+
+  const statusOf = (election) => electionState(election).status
+  const live = elections
+    .filter((election) => statusOf(election) === 'open')
+    .sort((a, b) => Date.parse(a.endsAt) - Date.parse(b.endsAt))
+  const soon = elections
+    .filter((election) => statusOf(election) === 'upcoming')
+    .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
+  const [main, ...rest] = [...live, ...soon]
+  if (!main) return null
+
+  const state = electionState(main)
+  const isLive = state.status === 'open'
+  const target = Date.parse(isLive ? main.endsAt : main.startsAt)
+  const label = isLive ? t.dashCountdownClosesIn : t.dashCountdownOpensIn
+  const parts = countdownParts(target - clock)
+  const units = [
+    { value: parts.days, label: t.dashCountdownDays },
+    { value: parts.hours, label: t.dashCountdownHours },
+    { value: parts.minutes, label: t.dashCountdownMinutes },
+    { value: parts.seconds, label: t.dashCountdownSeconds },
+  ]
+  const canVote = !isAdmin && isLive && state.eligible && !state.voted
+
+  return (
+    <section className={`countdown ${isLive ? 'countdown-live' : 'countdown-soon'}`} aria-labelledby="countdown-title">
+      <div className="countdown-main">
+        <div className="countdown-info">
+          <span className="countdown-flag">
+            {isLive ? <span className="live-dot" aria-hidden="true" /> : <CalendarClock size={14} aria-hidden="true" />}
+            {isLive ? t.dashCountdownLive : t.dashCountdownUpcoming}
+          </span>
+          <h2 id="countdown-title">{main.title}</h2>
+          <dl className="countdown-times">
+            <div>
+              <dt>{t.dashCountdownStarts}</dt>
+              <dd>{formatDateTime(main.startsAt)}</dd>
+            </div>
+            <div>
+              <dt>{t.dashCountdownEnds}</dt>
+              <dd>{formatDateTime(main.endsAt)}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div className="countdown-clock">
+          <p className="countdown-label">{label}</p>
+          <div className="countdown-digits" role="timer" aria-label={`${label} ${shortCountdown(t, target - clock)}`}>
+            {units.map((unit, index) => (
+              <Fragment key={unit.label}>
+                {index > 0 && (
+                  <span className="countdown-sep" aria-hidden="true">
+                    :
+                  </span>
+                )}
+                <span className="countdown-unit" aria-hidden="true">
+                  <span className="countdown-num">{pad2(unit.value)}</span>
+                  <span className="countdown-unit-label">{unit.label}</span>
+                </span>
+              </Fragment>
+            ))}
+          </div>
+          <div className="countdown-actions">
+            {canVote ? (
+              <button type="button" className="btn btn-primary" onClick={() => navigate('vote', main.id)}>
+                <Vote size={17} aria-hidden="true" /> {t.dashCountdownVoteNow}
+              </button>
+            ) : (
+              <>
+                {!isAdmin && state.voted && (
+                  <span className="countdown-voted">
+                    <CheckCircle2 size={15} aria-hidden="true" /> {t.dashCountdownVoted}
+                  </span>
+                )}
+                <button type="button" className="btn btn-secondary" onClick={() => navigate('election', main.id)}>
+                  {t.dashCountdownView} <ArrowRight size={15} aria-hidden="true" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {rest.length > 0 && (
+        <div className="countdown-more">
+          <p className="countdown-more-title">{t.dashCountdownAlso}</p>
+          <ul>
+            {rest.slice(0, 3).map((election) => {
+              const open = statusOf(election) === 'open'
+              const target = Date.parse(open ? election.endsAt : election.startsAt)
+              return (
+                <li key={election.id}>
+                  <button type="button" onClick={() => navigate('election', election.id)}>
+                    <span className={`countdown-dot ${open ? 'is-open' : 'is-soon'}`} aria-hidden="true" />
+                    <span className="countdown-more-name">{election.title}</span>
+                    <span className="countdown-more-when">{open ? t.dashCountdownClosesIn : t.dashCountdownOpensIn}</span>
+                    <span className="countdown-more-time">{shortCountdown(t, target - clock)}</span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+
+      <p className="countdown-zone">{t.dashCountdownIst}</p>
+    </section>
+  )
+}
+
+// "What's New": running elections (then upcoming ones) scrolling right to
+// left. Each item opens its election. Hovering or focusing pauses it; the
+// button stops it.
+const TICKER_SPEED = 70 // pixels per second
+
+export function NewsTicker({ elections }) {
+  const { t, electionState, navigate } = useApp()
+  const [paused, setPaused] = useState(false)
+  const [duration, setDuration] = useState(40)
+  const groupRef = useRef(null)
+
+  const items = [
+    ...elections
+      .filter((election) => electionState(election).status === 'open')
+      .sort((a, b) => Date.parse(a.endsAt) - Date.parse(b.endsAt))
+      .map((election) => ({
+        id: `open-${election.id}`,
+        tag: t.dashTickerLive,
+        tone: 'live',
+        text: fill(t.dashTickerOpen, { title: election.title, date: formatDateTime(election.endsAt) }),
+        go: () => navigate('election', election.id),
+      })),
+    ...elections
+      .filter((election) => electionState(election).status === 'upcoming')
+      .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
+      .slice(0, 3)
+      .map((election) => ({
+        id: `soon-${election.id}`,
+        tag: t.dashTickerUpcoming,
+        tone: 'soon',
+        text: fill(t.dashTickerSoon, { title: election.title, date: formatDateTime(election.startsAt) }),
+        go: () => navigate('election', election.id),
+      })),
+  ]
+  const signature = items.map((item) => item.text).join('|')
+
+  // Keep the speed steady however long the list is.
+  useLayoutEffect(() => {
+    const width = groupRef.current?.offsetWidth
+    if (width) setDuration(Math.max(20, Math.round(width / TICKER_SPEED)))
+  }, [signature])
+
+  if (items.length === 0) return null
+
+  const group = (copy) => (
+    <ul className="ticker-group" ref={copy ? null : groupRef} aria-hidden={copy || undefined}>
+      {items.map((item) => (
+        <li key={item.id} className="ticker-item">
+          <button type="button" onClick={item.go} tabIndex={copy ? -1 : undefined}>
+            <span className="ticker-text">{item.text}</span>
+            <span className={`ticker-tag ticker-tag-${item.tone}`}>{item.tag}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
+
+  return (
+    <section className={`ticker${paused ? ' is-paused' : ''}`} aria-label={t.dashTickerTitle}>
+      <p className="ticker-label">{t.dashTickerTitle}</p>
+      <div className="ticker-viewport">
+        <div className="ticker-track" style={{ animationDuration: `${duration}s` }}>
+          {group(false)}
+          {group(true)}
+        </div>
+      </div>
+      <button
+        type="button"
+        className="ticker-toggle"
+        onClick={() => setPaused((value) => !value)}
+        aria-label={paused ? t.dashTickerPlay : t.dashTickerPause}
+        title={paused ? t.dashTickerPlay : t.dashTickerPause}
+      >
+        {paused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}
+      </button>
+    </section>
+  )
+}
+
 export function LedgerCard() {
-  const { ledger, chain, navigate } = useApp()
+  const { t, ledger, chain, navigate } = useApp()
   const recent = chain.slice(-4).reverse()
   const label =
     ledger.status === 'valid'
-      ? 'Election records verified'
+      ? t.dashLedgerVerified
       : ledger.status === 'broken'
-        ? `Tampering detected at block #${ledger.brokenAt}`
-        : 'Verifying ledger…'
+        ? fill(t.dashLedgerBroken, { n: ledger.brokenAt })
+        : t.dashLedgerChecking
 
   return (
     <Card
-      title="Ledger Status"
-      subtitle={`${chain.length} block${chain.length === 1 ? '' : 's'} sealed`}
+      title={t.dashLedgerStatus}
+      subtitle={countText(t, 'dashBlocksSealed', chain.length)}
       icon={<Blocks size={18} />}
       tone="teal"
       action={
         <button type="button" className="link-btn" onClick={() => navigate('ledger')}>
-          View Ledger <ArrowRight size={14} aria-hidden="true" />
+          {t.dashViewLedger} <ArrowRight size={14} aria-hidden="true" />
         </button>
       }
     >
@@ -123,7 +343,7 @@ export function LedgerCard() {
         )}
         {label}
       </p>
-      <p className="list-caption">Recent sealed blocks</p>
+      <p className="list-caption">{t.dashRecentBlocks}</p>
       <ul className="block-list">
         {recent.map((block) => (
           <li key={block.hash}>
@@ -132,10 +352,10 @@ export function LedgerCard() {
               {compactHash(block.hash)}
             </span>
             {ledger.status === 'valid' ? (
-              <Badge tone="success">Verified</Badge>
+              <Badge tone="success">{t.dashVerified}</Badge>
             ) : (
               <Badge tone="neutral" icon={null}>
-                {block.type === 'genesis' ? 'Genesis' : 'Ballot'}
+                {block.type === 'genesis' ? t.dashGenesis : t.dashBallot}
               </Badge>
             )}
           </li>
@@ -146,20 +366,20 @@ export function LedgerCard() {
 }
 
 export function NoticesCard({ limit = 3 }) {
-  const { notices, navigate, now } = useApp()
+  const { t, notices, navigate, now } = useApp()
   return (
     <Card
-      title="Notices"
+      title={t.uiNotices}
       icon={<Megaphone size={18} />}
       tone="amber"
       action={
         <button type="button" className="link-btn" onClick={() => navigate('notices')}>
-          View All Notices <ArrowRight size={14} aria-hidden="true" />
+          {t.dashViewAllNotices} <ArrowRight size={14} aria-hidden="true" />
         </button>
       }
     >
       {notices.length === 0 ? (
-        <EmptyState compact title="No notices" copy="New announcements from the election committee will appear here." />
+        <EmptyState compact title={t.dashNoNotices} copy={t.dashNoNoticesCopy} />
       ) : (
         <ul className="notice-list">
           {notices.slice(0, limit).map((notice) => (
@@ -183,7 +403,7 @@ export function NoticesCard({ limit = 3 }) {
 
 // One election as a list row: status, title, key facts and the next action.
 function ElectionRow({ election }) {
-  const { navigate, electionState } = useApp()
+  const { t, navigate, electionState } = useApp()
   const state = electionState(election)
   const canVote = state.status === 'open' && state.eligible && !state.voted
   const positions = election.positions.length
@@ -193,7 +413,7 @@ function ElectionRow({ election }) {
       <div className="election-row-main">
         <div className="election-row-badges">
           <StatusBadge status={state.status} />
-          {state.voted && <Badge tone="success">Voted</Badge>}
+          {state.voted && <Badge tone="success">{t.dashVoted}</Badge>}
         </div>
         <h3 className="election-row-title">{election.title}</h3>
         <p className="election-row-facts">
@@ -204,23 +424,23 @@ function ElectionRow({ election }) {
             <Building2 size={14} aria-hidden="true" /> {scopeLabel(election)}
           </span>
           <span>
-            <UsersRound size={14} aria-hidden="true" /> {positions} position{positions === 1 ? '' : 's'}
+            <UsersRound size={14} aria-hidden="true" /> {countText(t, 'dashPositions', positions)}
           </span>
         </p>
       </div>
       <div className="election-row-actions">
         {canVote && (
           <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate('vote', election.id)}>
-            <Vote size={15} aria-hidden="true" /> Vote now
+            <Vote size={15} aria-hidden="true" /> {t.dashVoteNow}
           </button>
         )}
         {state.voted && (
           <button type="button" className="btn btn-secondary btn-sm" onClick={() => navigate('receipt', election.id)}>
-            View receipt
+            {t.dashViewReceipt}
           </button>
         )}
         <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('election', election.id)}>
-          Details <ArrowRight size={15} aria-hidden="true" />
+          {t.dashDetails} <ArrowRight size={15} aria-hidden="true" />
         </button>
       </div>
     </li>
@@ -249,25 +469,29 @@ export function StudentDashboard() {
   const focusState = focus ? electionState(focus) : null
 
   const journey = [
-    { label: 'Registered', note: voter.registeredAt ? `On ${voter.registeredAt.split(',')[0]}` : null, state: 'done' },
     {
-      label: 'Identity Verified',
-      note: voter.status === 'Verified' ? null : 'Awaiting verification by the election office',
+      label: t.dashStepRegistered,
+      note: voter.registeredAt ? fill(t.dashRegisteredOn, { date: voter.registeredAt.split(',')[0] }) : null,
+      state: 'done',
+    },
+    {
+      label: t.dashStepIdentity,
+      note: voter.status === 'Verified' ? null : t.dashAwaitingVerification,
       state: voter.status === 'Verified' ? 'done' : 'current',
     },
     {
-      label: 'Ballot Available',
+      label: t.dashStepBallot,
       note: !focus
-        ? 'No ballot is open for you right now'
+        ? t.dashNoBallotOpen
         : focusState.status === 'upcoming'
-          ? `Opens ${formatDate(focus.startsAt)}`
+          ? fill(t.dashOpensOn, { date: formatDate(focus.startsAt) })
           : focusState.voted
             ? null
-            : `Voting closes ${formatDate(focus.endsAt)}`,
+            : fill(t.dashClosesOn, { date: formatDate(focus.endsAt) }),
       state: focusState?.status === 'open' ? (focusState.voted ? 'done' : 'current') : focus ? 'current' : 'todo',
     },
-    { label: 'Vote Cast', state: focusState?.voted ? 'done' : 'todo' },
-    { label: 'Receipt', note: focusState?.voted ? 'Available in My Receipts' : null, state: focusState?.voted ? 'done' : 'todo' },
+    { label: t.dashStepVoteCast, state: focusState?.voted ? 'done' : 'todo' },
+    { label: t.dashStepReceipt, note: focusState?.voted ? t.dashReceiptInReceipts : null, state: focusState?.voted ? 'done' : 'todo' },
   ]
   if (voter.status !== 'Verified') journey.slice(2).forEach((step) => (step.state = 'todo'))
 
@@ -277,6 +501,8 @@ export function StudentDashboard() {
     .sort(byOpenThenStart(electionState))
   const preview = withResults[0]
   const hidden = active.find((election) => !electionState(election).resultsVisible)
+  // The election title is bold, so the sentence is split around it.
+  const [hiddenBefore, hiddenAfter = ''] = t.dashResultsHidden.split('{title}')
 
   return (
     <div className="page-stack dash-flat">
@@ -286,27 +512,25 @@ export function StudentDashboard() {
             {greetingFor(t)}, {voter.name.split(' ')[0]} <span aria-hidden="true">👋</span>
           </h2>
           <p>
-            {toVote.length > 0
-              ? `You have ${toVote.length} ballot${toVote.length === 1 ? '' : 's'} waiting. Your vote is private and sealed on the ledger.`
-              : 'You are all caught up. New ballots will appear here when voting opens.'}
+            {toVote.length > 0 ? countText(t, 'dashBallotsWaiting', toVote.length) : t.dashAllCaughtUp}
           </p>
           <div className="welcome-meta">
             <span className="welcome-chip">
               <GraduationCap size={14} aria-hidden="true" />
-              {academicLine(voter.department, voter.year) || 'Department and year not set'}
+              {academicLine(voter.department, voter.year) || t.dashNoDeptYear}
             </span>
             <span className="welcome-chip">
               <CalendarDays size={14} aria-hidden="true" /> {todayLabel()}
             </span>
             <span className="welcome-chip">
-              <ShieldCheck size={14} aria-hidden="true" /> {voter.status === 'Verified' ? 'Identity verified' : 'Verification pending'}
+              <ShieldCheck size={14} aria-hidden="true" /> {voter.status === 'Verified' ? t.dashIdentityVerified : t.dashVerificationPending}
             </span>
           </div>
         </div>
         <div className="welcome-actions">
           {toVote.length > 0 && (
             <button type="button" className="btn btn-primary" onClick={() => navigate('vote', toVote.length === 1 ? toVote[0].id : null)}>
-              <Vote size={17} aria-hidden="true" /> {toVote.length === 1 ? 'Cast your vote' : `Cast your votes (${toVote.length})`}
+              <Vote size={17} aria-hidden="true" /> {toVote.length === 1 ? t.dashCastYourVote : fill(t.dashCastYourVotes, { n: toVote.length })}
             </button>
           )}
           {votedCount > 0 && (
@@ -317,32 +541,36 @@ export function StudentDashboard() {
         </div>
       </section>
 
+      <NewsTicker elections={mine} />
+
+      <ElectionCountdown elections={mine} />
+
       <div className="stat-grid">
-        <StatCard icon={<ClipboardCheck size={20} />} label="Eligible Elections" value={mine.length} tone="blue" hint="Open, upcoming and closed" onClick={() => navigate('elections')} />
-        <StatCard icon={<Vote size={20} />} label="Active Elections" value={active.length} tone="green" hint={toVote.length ? `${toVote.length} awaiting your vote` : active.length ? 'All voted' : 'None open right now'} onClick={() => navigate('vote')} />
-        <StatCard icon={<CheckCircle2 size={20} />} label="Votes Cast" value={votedCount} tone="violet" hint={votedCount ? `${votedCount} receipt${votedCount === 1 ? '' : 's'} saved` : 'No ballots cast yet'} onClick={() => navigate('receipts')} />
-        <StatCard icon={<CalendarClock size={20} />} label="Upcoming Elections" value={upcoming.length} tone="amber" hint={upcoming[0] ? `Next opens ${formatDate(upcoming[0].startsAt)}` : 'Nothing scheduled'} onClick={() => navigate('elections')} />
+        <StatCard icon={<ClipboardCheck size={20} />} label={t.dashEligibleElections} value={mine.length} tone="blue" hint={t.dashEligibleHint} onClick={() => navigate('elections')} />
+        <StatCard icon={<Vote size={20} />} label={t.dashActiveElections} value={active.length} tone="green" hint={toVote.length ? countText(t, 'dashAwaitingVote', toVote.length) : active.length ? t.dashAllVoted : t.dashNoneOpen} onClick={() => navigate('vote')} />
+        <StatCard icon={<CheckCircle2 size={20} />} label={t.dashVotesCast} value={votedCount} tone="violet" hint={votedCount ? countText(t, 'dashReceiptsSaved', votedCount) : t.dashNoBallotsYet} onClick={() => navigate('receipts')} />
+        <StatCard icon={<CalendarClock size={20} />} label={t.dashUpcomingElections} value={upcoming.length} tone="amber" hint={upcoming[0] ? fill(t.dashNextOpens, { date: formatDate(upcoming[0].startsAt) }) : t.dashNothingScheduled} onClick={() => navigate('elections')} />
       </div>
 
       {toVote.length > 0 && (
-        <Alert tone="info" title={`${toVote.length} election${toVote.length === 1 ? ' is' : 's are'} waiting for your vote`}>
-          {toVote.map((election) => `${election.title} (closes ${formatDate(election.endsAt)})`).join(' · ')}
+        <Alert tone="info" title={countText(t, 'dashWaitingTitle', toVote.length)}>
+          {toVote.map((election) => fill(t.dashClosesParen, { title: election.title, date: formatDate(election.endsAt) })).join(' · ')}
         </Alert>
       )}
 
       <Card
-        title="Ballot Progress"
-        subtitle={focus ? focus.title : 'No active ballot'}
+        title={t.dashBallotProgress}
+        subtitle={focus ? focus.title : t.dashNoActiveBallot}
         icon={<ShieldCheck size={18} />}
         tone="green"
         action={
           focus && focusState.status === 'open' && !focusState.voted ? (
             <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate('vote', focus.id)}>
-              Continue to ballot <ArrowRight size={15} aria-hidden="true" />
+              {t.dashContinueBallot} <ArrowRight size={15} aria-hidden="true" />
             </button>
           ) : focus && focusState.voted && receipts[focus.id] ? (
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => navigate('receipt', focus.id)}>
-              View receipt
+              {t.dashViewReceipt}
             </button>
           ) : null
         }
@@ -351,23 +579,20 @@ export function StudentDashboard() {
       </Card>
 
       <Card
-        title="Your Elections"
-        subtitle="Open and upcoming elections you are eligible for"
+        title={t.dashYourElections}
+        subtitle={t.dashYourElectionsSub}
         icon={<CalendarDays size={18} />}
         tone="blue"
         action={
           <button type="button" className="link-btn" onClick={() => navigate('elections')}>
-            View all <ArrowRight size={14} aria-hidden="true" />
+            {t.dashViewAll} <ArrowRight size={14} aria-hidden="true" />
           </button>
         }
       >
         {featured.length === 0 ? (
-          <EmptyState
-            title="No active elections"
-            copy="There are currently no elections available for you."
-          >
+          <EmptyState title={t.dashNoActiveElections} copy={t.dashNoActiveElectionsCopy}>
             <button type="button" className="btn btn-secondary" onClick={() => navigate('elections')}>
-              View Upcoming Elections
+              {t.dashViewUpcoming}
             </button>
           </EmptyState>
         ) : (
@@ -380,13 +605,13 @@ export function StudentDashboard() {
       </Card>
 
       <Card
-        title="Live Results"
-        subtitle="Shown only where the election publishes live results"
+        title={t.dashLiveResults}
+        subtitle={t.dashLiveResultsSub}
         icon={<BarChart3 size={18} />}
         tone="violet"
         action={
           <button type="button" className="link-btn" onClick={() => navigate('results', preview?.id)}>
-            View Full Results <ArrowRight size={14} aria-hidden="true" />
+            {t.dashViewFullResults} <ArrowRight size={14} aria-hidden="true" />
           </button>
         }
       >
@@ -404,12 +629,13 @@ export function StudentDashboard() {
             ))}
           </div>
         ) : (
-          <EmptyState compact icon={<BarChart3 size={20} />} title="No results to show yet" copy="Results appear here once voting opens for elections with live results." />
+          <EmptyState compact icon={<BarChart3 size={20} />} title={t.dashNoResults} copy={t.dashNoResultsCopy} />
         )}
         {hidden && (
           <p className="hidden-note">
-            <ShieldCheck size={15} aria-hidden="true" /> Results for <strong>{hidden.title}</strong> are hidden until
-            voting closes on {formatDate(hidden.endsAt)}.
+            <ShieldCheck size={15} aria-hidden="true" /> {hiddenBefore}
+            <strong>{hidden.title}</strong>
+            {fill(hiddenAfter, { date: formatDate(hidden.endsAt) })}
           </p>
         )}
       </Card>
@@ -435,7 +661,7 @@ export function AdminDashboard() {
   const published = elections.filter((election) => election.published)
   const totalVotes = published.reduce((sum, election) => sum + tallies[election.id].votesCast, 0)
   const closingToday = open.filter((election) => Date.parse(election.endsAt) - now < 24 * 60 * 60 * 1000)
-  const electionTitle = (id) => elections.find((election) => election.id === id)?.title || 'Unknown election'
+  const electionTitle = (id) => elections.find((election) => election.id === id)?.title || t.dashUnknownElection
   const positionTitle = (entry) =>
     elections.find((election) => election.id === entry.electionId)?.positions.find((p) => p.id === entry.positionId)?.title
 
@@ -448,32 +674,34 @@ export function AdminDashboard() {
       .map((block) => ({
         id: block.hash,
         at: block.timestamp,
-        text: `Ballot sealed in block #${block.index} — ${electionTitle(block.electionId || 'general')}`,
+        // `text` stays English so activityStyle can read it; `label` is shown.
+        text: 'Ballot sealed',
+        label: fill(t.dashBallotSealedIn, { n: block.index, title: electionTitle(block.electionId || 'general') }),
       }))
     return [...registry.activity, ...ballots].sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, 8)
-    // electionTitle only reads `elections`.
+    // electionTitle only reads `elections` and `t`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chain, registry.activity, elections])
+  }, [chain, registry.activity, elections, t])
 
   const actions = [
     pending.length > 0 && {
-      text: `${pending.length} candidate nomination${pending.length === 1 ? '' : 's'} awaiting verification`,
+      text: countText(t, 'dashNominationsAwaiting', pending.length),
       go: () => navigate('candidate-verification'),
-      label: 'Review',
+      label: t.dashReview,
       tone: 'violet',
       icon: <ClipboardCheck size={17} />,
     },
     drafts.length > 0 && {
-      text: `${drafts.length} draft election${drafts.length === 1 ? '' : 's'} not yet published`,
+      text: countText(t, 'dashDraftsUnpublished', drafts.length),
       go: () => navigate('manage-elections'),
-      label: 'Open',
+      label: t.dashOpen,
       tone: 'amber',
       icon: <FilePen size={17} />,
     },
     ...closingToday.map((election) => ({
-      text: `${election.title} closes ${formatDate(election.endsAt)} at ${new Date(election.endsAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}`,
+      text: fill(t.dashClosesAt, { title: election.title, date: formatDate(election.endsAt), time: formatTime(election.endsAt) }),
       go: () => navigate('election', election.id),
-      label: 'View',
+      label: t.dashView,
       tone: 'rose',
       icon: <Clock3 size={17} />,
     })),
@@ -487,8 +715,8 @@ export function AdminDashboard() {
             {greetingFor(t)}, {voter.name} <span aria-hidden="true">👋</span>
           </h2>
           <p>
-            {open.length} election{open.length === 1 ? ' is' : 's are'} open for voting
-            {actions.length ? ` and ${actions.length} item${actions.length === 1 ? ' needs' : 's need'} your attention.` : '. Nothing needs your attention.'}
+            {countText(t, 'dashOpenForVoting', open.length)}{' '}
+            {actions.length ? countText(t, 'dashNeedsAttention', actions.length) : t.dashNothingNeedsAttention}
           </p>
           <div className="welcome-meta">
             <span className="welcome-chip">
@@ -498,30 +726,34 @@ export function AdminDashboard() {
               <CalendarDays size={14} aria-hidden="true" /> {todayLabel()}
             </span>
             <span className="welcome-chip">
-              <Blocks size={14} aria-hidden="true" /> {chain.length} ledger block{chain.length === 1 ? '' : 's'}
+              <Blocks size={14} aria-hidden="true" /> {countText(t, 'dashLedgerBlocks', chain.length)}
             </span>
           </div>
         </div>
         <div className="welcome-actions">
           <button type="button" className="btn btn-primary" onClick={() => navigate('election-new')}>
-            <Plus size={17} aria-hidden="true" /> Create election
+            <Plus size={17} aria-hidden="true" /> {t.dashCreateElection}
           </button>
           <button type="button" className="btn btn-secondary" onClick={() => navigate('notices')}>
-            <Megaphone size={17} aria-hidden="true" /> Post notice
+            <Megaphone size={17} aria-hidden="true" /> {t.dashPostNotice}
           </button>
         </div>
       </section>
 
+      <NewsTicker elections={published} />
+
+      <ElectionCountdown elections={published} />
+
       <div className="stat-grid stat-grid-5">
-        <StatCard icon={<UsersRound size={20} />} label="Total Students" value={formatNumber(students.length)} tone="blue" hint="Registered on the roll" onClick={() => navigate('voters')} />
-        <StatCard icon={<Vote size={20} />} label="Active Elections" value={open.length} tone="green" hint={`${published.length} published`} onClick={() => navigate('manage-elections')} />
-        <StatCard icon={<UserRound size={20} />} label="Candidates" value={candidates.length} tone="violet" hint={`${verified.length} verified`} onClick={() => navigate('candidate-verification')} />
-        <StatCard icon={<CheckCircle2 size={20} />} label="Votes Cast" value={formatNumber(totalVotes)} tone="teal" hint="Across published elections" onClick={() => navigate('reports')} />
-        <StatCard icon={<ClipboardCheck size={20} />} label="Pending Reviews" value={pending.length} tone={pending.length ? 'amber' : 'green'} hint={pending.length ? 'Nominations to verify' : 'All clear'} onClick={() => navigate('candidate-verification')} />
+        <StatCard icon={<UsersRound size={20} />} label={t.dashTotalStudents} value={formatNumber(students.length)} tone="blue" hint={t.dashRegisteredRoll} onClick={() => navigate('voters')} />
+        <StatCard icon={<Vote size={20} />} label={t.dashActiveElections} value={open.length} tone="green" hint={fill(t.dashPublishedCount, { n: published.length })} onClick={() => navigate('manage-elections')} />
+        <StatCard icon={<UserRound size={20} />} label={t.dashCandidates} value={candidates.length} tone="violet" hint={fill(t.dashVerifiedCount, { n: verified.length })} onClick={() => navigate('candidate-verification')} />
+        <StatCard icon={<CheckCircle2 size={20} />} label={t.dashVotesCast} value={formatNumber(totalVotes)} tone="teal" hint={t.dashAcrossPublished} onClick={() => navigate('reports')} />
+        <StatCard icon={<ClipboardCheck size={20} />} label={t.dashPendingReviews} value={pending.length} tone={pending.length ? 'amber' : 'green'} hint={pending.length ? t.dashNominationsToVerify : t.dashAllClear} onClick={() => navigate('candidate-verification')} />
       </div>
 
       {actions.length > 0 ? (
-        <Card title="Pending Actions" subtitle="Things that need an election officer" icon={<AlertTriangle size={18} />} tone="amber">
+        <Card title={t.dashPendingActions} subtitle={t.dashPendingActionsSub} icon={<AlertTriangle size={18} />} tone="amber">
           <ul className="action-list">
             {actions.map((action) => (
               <li key={action.text}>
@@ -537,27 +769,27 @@ export function AdminDashboard() {
           </ul>
         </Card>
       ) : (
-        <Alert tone="success" title="No pending actions">
-          All nominations are reviewed and every election is published.
+        <Alert tone="success" title={t.dashNoPendingActions}>
+          {t.dashNoPendingActionsCopy}
         </Alert>
       )}
 
       <Card
-        title="Election Activity"
-        subtitle="Elections open for voting now"
+        title={t.dashElectionActivity}
+        subtitle={t.dashElectionActivitySub}
         icon={<BarChart3 size={18} />}
         tone="blue"
         flush
         action={
           <button type="button" className="link-btn" onClick={() => navigate('manage-elections')}>
-            Manage <ArrowRight size={14} aria-hidden="true" />
+            {t.dashManage} <ArrowRight size={14} aria-hidden="true" />
           </button>
         }
       >
         {open.length === 0 ? (
-          <EmptyState compact title="No elections are open" copy="Published elections appear here while voting is open.">
+          <EmptyState compact title={t.dashNoOpenElections} copy={t.dashNoOpenElectionsCopy}>
             <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate('election-new')}>
-              Create election
+              {t.dashCreateElection}
             </button>
           </EmptyState>
         ) : (
@@ -565,15 +797,15 @@ export function AdminDashboard() {
             <table className="table">
               <thead>
                 <tr>
-                  <th scope="col">Election</th>
-                  <th scope="col">Scope</th>
-                  <th scope="col">Closes</th>
+                  <th scope="col">{t.dashColElection}</th>
+                  <th scope="col">{t.dashColScope}</th>
+                  <th scope="col">{t.dashColCloses}</th>
                   <th scope="col" className="num">
-                    Votes
+                    {t.dashColVotes}
                   </th>
-                  <th scope="col">Turnout</th>
+                  <th scope="col">{t.dashColTurnout}</th>
                   <th scope="col">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">{t.dashColActions}</span>
                   </th>
                 </tr>
               </thead>
@@ -584,23 +816,23 @@ export function AdminDashboard() {
                   const turnout = percentOf(cast, electorate)
                   return (
                     <tr key={election.id}>
-                      <td data-label="Election">
+                      <td data-label={t.dashColElection}>
                         <strong>{election.title}</strong>
                       </td>
-                      <td data-label="Scope">{scopeLabel(election)}</td>
-                      <td data-label="Closes">{formatDate(election.endsAt)}</td>
-                      <td data-label="Votes" className="num">
+                      <td data-label={t.dashColScope}>{scopeLabel(election)}</td>
+                      <td data-label={t.dashColCloses}>{formatDate(election.endsAt)}</td>
+                      <td data-label={t.dashColVotes} className="num">
                         {formatNumber(cast)}
                       </td>
-                      <td data-label="Turnout">
+                      <td data-label={t.dashColTurnout}>
                         <span className="turnout-cell">
-                          <ProgressBar value={turnout} label={`Turnout ${turnout}%`} />
+                          <ProgressBar value={turnout} label={fill(t.dashTurnoutLabel, { n: turnout })} />
                           <small>{turnout}%</small>
                         </span>
                       </td>
                       <td className="actions">
                         <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('election', election.id)}>
-                          View
+                          {t.dashView}
                         </button>
                       </td>
                     </tr>
@@ -613,18 +845,18 @@ export function AdminDashboard() {
       </Card>
 
       <Card
-        title="Candidate Verification"
-        subtitle={pending.length ? `${pending.length} pending review` : 'Nothing waiting'}
+        title={t.dashCandidateVerification}
+        subtitle={pending.length ? fill(t.dashPendingReview, { n: pending.length }) : t.dashNothingWaiting}
         icon={<ClipboardCheck size={18} />}
         tone="violet"
         action={
           <button type="button" className="link-btn" onClick={() => navigate('candidate-verification')}>
-            View all <ArrowRight size={14} aria-hidden="true" />
+            {t.dashViewAll} <ArrowRight size={14} aria-hidden="true" />
           </button>
         }
       >
         {pending.length === 0 ? (
-          <EmptyState compact icon={<Check size={20} />} title="All candidates reviewed" copy="New nominations will appear here for verification." />
+          <EmptyState compact icon={<Check size={20} />} title={t.dashAllReviewed} copy={t.dashAllReviewedCopy} />
         ) : (
           <ul className="review-list">
             {pending.slice(0, 4).map((entry) => (
@@ -638,10 +870,10 @@ export function AdminDashboard() {
                 </span>
                 <span className="review-actions">
                   <button type="button" className="btn btn-success btn-sm" onClick={() => admin.setCandidateStatus(entry.id, 'verified')}>
-                    <Check size={15} aria-hidden="true" /> Verify
+                    <Check size={15} aria-hidden="true" /> {t.dashVerify}
                   </button>
                   <button type="button" className="btn btn-secondary btn-sm" onClick={() => setRejecting(entry)}>
-                    <X size={15} aria-hidden="true" /> Reject
+                    <X size={15} aria-hidden="true" /> {t.dashReject}
                   </button>
                 </span>
               </li>
@@ -650,7 +882,7 @@ export function AdminDashboard() {
         )}
       </Card>
 
-      <Card title="Recent System Activity" subtitle="Latest changes and sealed ballots" icon={<FileText size={18} />} tone="teal">
+      <Card title={t.dashRecentActivity} subtitle={t.dashRecentActivitySub} icon={<FileText size={18} />} tone="teal">
         <ul className="activity-list">
           {activity.slice(0, 5).map((entry) => {
             const style = activityStyle(entry.text)
@@ -660,7 +892,7 @@ export function AdminDashboard() {
                   {style.icon}
                 </span>
                 <span>
-                  <span>{entry.text}</span>
+                  <span>{entry.label || entry.text}</span>
                   <small>{relativeTime(entry.at, now)}</small>
                 </span>
               </li>
@@ -670,14 +902,14 @@ export function AdminDashboard() {
       </Card>
 
       <Card
-        title="Recent Elections"
-        subtitle="The five most recently created elections"
+        title={t.dashRecentElections}
+        subtitle={t.dashRecentElectionsSub}
         icon={<CalendarDays size={18} />}
         tone="sky"
         flush
         action={
           <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate('election-new')}>
-            Create election
+            {t.dashCreateElection}
           </button>
         }
       >
@@ -685,34 +917,34 @@ export function AdminDashboard() {
           <table className="table">
             <thead>
               <tr>
-                <th scope="col">Election</th>
-                <th scope="col">Status</th>
-                <th scope="col">Voting period</th>
+                <th scope="col">{t.dashColElection}</th>
+                <th scope="col">{t.dashColStatus}</th>
+                <th scope="col">{t.dashColPeriod}</th>
                 <th scope="col" className="num">
-                  Votes
+                  {t.dashColVotes}
                 </th>
                 <th scope="col">
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">{t.dashColActions}</span>
                 </th>
               </tr>
             </thead>
             <tbody>
               {recentElections.map((election) => (
                 <tr key={election.id}>
-                  <td data-label="Election">
+                  <td data-label={t.dashColElection}>
                     <strong>{election.title}</strong>
                     <small className="cell-sub">{scopeLabel(election)}</small>
                   </td>
-                  <td data-label="Status">
+                  <td data-label={t.dashColStatus}>
                     <StatusBadge status={electionState(election).status} />
                   </td>
-                  <td data-label="Voting period">{formatPeriod(election)}</td>
-                  <td data-label="Votes" className="num">
+                  <td data-label={t.dashColPeriod}>{formatPeriod(election)}</td>
+                  <td data-label={t.dashColVotes} className="num">
                     {formatNumber(tallies[election.id].votesCast)}
                   </td>
                   <td className="actions">
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('election', election.id)}>
-                      View
+                      {t.dashView}
                     </button>
                   </td>
                 </tr>

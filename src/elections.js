@@ -3,6 +3,7 @@
 // the ledger, and never writes to any of them.
 
 import { academicLine, departmentLabel, yearLabel } from './college'
+import { dateLocale, uiLanguage } from './locale'
 
 export const STATUS_META = {
   draft: { label: 'Draft', tone: 'neutral' },
@@ -103,9 +104,41 @@ export function eligibilityLabel(election) {
 
 // ------------------------------------------------------------ formatting ---
 
+// Every election runs on Indian Standard Time, whatever the device's own
+// timezone. IST is a fixed UTC+05:30 with no daylight saving.
+export const IST_ZONE = 'Asia/Kolkata'
+const IST_OFFSET_MS = 330 * 60 * 1000
+
+// ISO timestamp → "YYYY-MM-DDTHH:mm" in IST, for a datetime-local input.
+export function toIstInput(iso) {
+  const ms = Date.parse(iso)
+  if (!iso || Number.isNaN(ms)) return ''
+  return new Date(ms + IST_OFFSET_MS).toISOString().slice(0, 16)
+}
+
+// A datetime-local value read as IST → ISO timestamp.
+export function fromIstInput(value) {
+  if (!value) return ''
+  const ms = Date.parse(`${value}:00+05:30`)
+  return Number.isNaN(ms) ? '' : new Date(ms).toISOString()
+}
+
+// `days` from today (IST) at `hour`:00 IST.
+export function istAt(days, hour) {
+  const date = new Date(Date.now() + IST_OFFSET_MS)
+  date.setUTCDate(date.getUTCDate() + days)
+  date.setUTCHours(hour, 0, 0, 0)
+  return new Date(date.getTime() - IST_OFFSET_MS).toISOString()
+}
+
+export function istHour(now = Date.now()) {
+  return new Date(now + IST_OFFSET_MS).getUTCHours()
+}
+
 export function formatDate(iso, withYear = false) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-IN', {
+  return new Date(iso).toLocaleDateString(dateLocale(), {
+    timeZone: IST_ZONE,
     day: '2-digit',
     month: 'short',
     ...(withYear ? { year: 'numeric' } : {}),
@@ -114,17 +147,43 @@ export function formatDate(iso, withYear = false) {
 
 export function formatDateTime(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('en-IN', {
+  const text = new Date(iso).toLocaleString(dateLocale(), {
+    timeZone: IST_ZONE,
     day: '2-digit',
     month: 'short',
     year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
   })
+  return `${text} IST`
 }
 
 export function formatTime(iso) {
-  return new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
+  return `${new Date(iso).toLocaleTimeString(dateLocale(), { timeZone: IST_ZONE, hour: 'numeric', minute: '2-digit' })} IST`
+}
+
+// Milliseconds left split into whole days, hours, minutes and seconds.
+export function countdownParts(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000))
+  return {
+    days: Math.floor(total / 86400),
+    hours: Math.floor((total % 86400) / 3600),
+    minutes: Math.floor((total % 3600) / 60),
+    seconds: total % 60,
+  }
+}
+
+// The next moment any published election opens or closes, or null.
+export function nextScheduleChange(elections, now = Date.now()) {
+  let next = null
+  elections.forEach((election) => {
+    if (!election.published || election.closedAt) return
+    ;[election.startsAt, election.endsAt].forEach((iso) => {
+      const at = Date.parse(iso)
+      if (at > now && (next === null || at < next)) next = at
+    })
+  })
+  return next
 }
 
 export function formatPeriod(election) {
@@ -134,6 +193,7 @@ export function formatPeriod(election) {
 export function relativeTime(iso, now = Date.now()) {
   const diff = now - Date.parse(iso)
   const minutes = Math.round(diff / 60000)
+  if (uiLanguage() !== 'en') return localRelativeTime(iso, minutes)
   if (minutes < 1) return 'Just now'
   if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`
   const hours = Math.round(minutes / 60)
@@ -141,6 +201,18 @@ export function relativeTime(iso, now = Date.now()) {
   const days = Math.round(hours / 24)
   if (days === 1) return 'Yesterday'
   if (days < 7) return `${days} days ago`
+  return formatDate(iso, true)
+}
+
+// Tamil and Hindi wording comes from the browser's own relative-time rules.
+function localRelativeTime(iso, minutes) {
+  const format = new Intl.RelativeTimeFormat(dateLocale(), { numeric: 'auto' })
+  if (minutes < 1) return format.format(0, 'second')
+  if (minutes < 60) return format.format(-minutes, 'minute')
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return format.format(-hours, 'hour')
+  const days = Math.round(hours / 24)
+  if (days < 7) return format.format(-days, 'day')
   return formatDate(iso, true)
 }
 

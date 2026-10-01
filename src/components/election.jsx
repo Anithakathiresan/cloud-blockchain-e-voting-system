@@ -4,6 +4,7 @@
 import { ArrowRight, Award, Building2, CalendarDays, CheckCircle2, Trophy, Vote } from 'lucide-react'
 import { useApp } from '../context'
 import { academicLine } from '../college'
+import { fill } from '../locale'
 import { METHOD_META, formatNumber, formatPeriod, resultsAvailability, scopeLabel } from '../elections'
 import { Avatar, Badge, ProgressBar, ReviewBadge, StatusBadge } from './ui'
 
@@ -92,11 +93,12 @@ export function CandidateCard({ candidate, positionTitle, showStatus }) {
 
 // Results for one position. `compact` drops photos for the dashboard preview.
 export function PositionResults({ result, method, compact, limit }) {
+  const { t } = useApp()
   const rows = limit ? result.rows.slice(0, limit) : result.rows
   const total = result.validVotes
 
   if (!result.rows.length) {
-    return <p className="muted">No verified candidates for this position.</p>
+    return <p className="muted">{t.dashNoVerifiedCandidates}</p>
   }
 
   return (
@@ -140,7 +142,7 @@ export function PositionResults({ result, method, compact, limit }) {
       ))}
       {compact && total > 0 && (
         <li className="results-total">
-          <CheckCircle2 size={14} aria-hidden="true" /> {formatNumber(total)} valid votes
+          <CheckCircle2 size={14} aria-hidden="true" /> {fill(t.dashValidVotes, { n: formatNumber(total) })}
         </li>
       )}
     </ol>

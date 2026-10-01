@@ -7,7 +7,7 @@
 
 import { LEGACY_ELECTION_ID } from './chain'
 
-const REGISTRY_KEY = 'evoting_college_registry'
+export const REGISTRY_KEY = 'evoting_college_registry'
 const REGISTRY_VERSION = 1
 
 // Seeds are laid out around the moment they are written, so a fresh install

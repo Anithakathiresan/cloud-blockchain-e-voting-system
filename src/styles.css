@@ -207,6 +207,19 @@ body.no-scroll {
   overflow: hidden;
 }
 
+/* Hide the scroll bar (page and side menu) while keeping wheel, touch and
+   keyboard scrolling. */
+html.no-scrollbar,
+html.no-scrollbar .sidebar-nav {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html.no-scrollbar::-webkit-scrollbar,
+html.no-scrollbar .sidebar-nav::-webkit-scrollbar {
+  display: none;
+}
+
 h1,
 h2,
 h3,
@@ -775,6 +788,92 @@ img {
   margin: 0 auto;
   padding: 24px;
   outline: none;
+}
+
+/* Back box above every page's content. */
+.back-bar {
+  display: flex;
+  margin-bottom: 18px;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 168px;
+  max-width: 100%;
+  padding: 7px 18px 7px 7px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-left: 4px solid var(--brand-orange);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.back-btn:hover {
+  border-color: var(--brand-orange);
+  box-shadow: var(--shadow-md);
+}
+
+.back-btn:focus-visible {
+  outline: 3px solid var(--action-soft);
+  outline-offset: 2px;
+  border-color: var(--brand-orange);
+}
+
+.back-btn-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  background: var(--brand-orange);
+  color: #fff;
+  transition: transform 0.15s;
+}
+
+.back-btn:hover .back-btn-icon {
+  transform: translateX(-2px);
+}
+
+.back-btn-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.back-btn-text strong {
+  font-size: 0.95rem;
+}
+
+.back-btn-text small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 760px) {
+  .back-bar {
+    margin-bottom: 14px;
+  }
+
+  .back-btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .back-btn,
+  .back-btn-icon {
+    transition: none;
+  }
 }
 
 /* ------------------------------------------------------- dropdowns --- */
@@ -2338,6 +2437,338 @@ select.input,
   background: rgba(255, 255, 255, 0.22);
 }
 
+/* Election countdown: the live election closing soonest, or the next to open. */
+.countdown {
+  position: relative;
+  padding: 24px 28px 18px;
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 79, 1, 0.28) 0, rgba(255, 79, 1, 0) 45%),
+    linear-gradient(115deg, var(--hero-to) 0%, var(--hero-from) 100%);
+  color: #ffffff;
+  box-shadow: var(--shadow-md);
+  border-left: 5px solid var(--brand-orange);
+}
+
+.countdown-soon {
+  border-left-color: #7dd3fc;
+}
+
+.countdown-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px 32px;
+}
+
+.countdown-info {
+  min-width: 0;
+}
+
+.countdown-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 79, 1, 0.2);
+  border: 1px solid rgba(255, 79, 1, 0.55);
+  color: #ffd2bd;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.countdown-soon .countdown-flag {
+  background: rgba(125, 211, 252, 0.14);
+  border-color: rgba(125, 211, 252, 0.45);
+  color: #d4efff;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand-orange);
+  box-shadow: 0 0 0 0 rgba(255, 79, 1, 0.7);
+  animation: live-pulse 1.6s ease-out infinite;
+}
+
+@keyframes live-pulse {
+  to {
+    box-shadow: 0 0 0 8px rgba(255, 79, 1, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot {
+    animation: none;
+  }
+}
+
+.countdown h2 {
+  margin-top: 12px;
+  font-size: 1.4rem;
+  line-height: 1.3;
+  color: #ffffff;
+  overflow-wrap: anywhere;
+}
+
+.countdown-times {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+  margin-top: 14px;
+  font-size: 0.9rem;
+}
+
+.countdown-times > div {
+  display: contents;
+}
+
+.countdown-times dt {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+}
+
+.countdown-times dd {
+  margin: 0;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.countdown-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.countdown-digits {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 3.4rem;
+}
+
+.countdown-num,
+.countdown-sep {
+  font-size: clamp(2rem, 4.5vw, 2.9rem);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-num {
+  color: var(--brand-orange);
+}
+
+.countdown-soon .countdown-num {
+  color: #ffffff;
+}
+
+.countdown-sep {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.countdown-unit-label {
+  margin-top: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.countdown-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px 14px;
+  margin-top: 4px;
+}
+
+.countdown-voted {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #b7f5c8;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.countdown .btn-primary {
+  background: var(--brand-orange);
+  border-color: var(--brand-orange);
+  color: #ffffff;
+}
+
+.countdown .btn-primary:hover:not(:disabled) {
+  background: #ff6a2b;
+  border-color: #ff6a2b;
+}
+
+.countdown .btn-secondary {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+}
+
+.countdown .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.countdown-more {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.countdown-more-title {
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.countdown-more ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.countdown-more button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto 9.5rem;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: #ffffff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.countdown-more li + li button {
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.countdown-more button:hover .countdown-more-name {
+  color: #ffb08a;
+}
+
+.countdown-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.countdown-dot.is-open {
+  background: var(--brand-orange);
+}
+
+.countdown-dot.is-soon {
+  background: #7dd3fc;
+}
+
+.countdown-more-name {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.countdown-more-when {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+.countdown-more-time {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.countdown-zone {
+  margin-top: 12px;
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+@media (max-width: 760px) {
+  .countdown {
+    padding: 20px 18px 16px;
+  }
+
+  .countdown-main {
+    grid-template-columns: 1fr;
+  }
+
+  .countdown-clock {
+    align-items: flex-start;
+  }
+
+  .countdown-actions {
+    justify-content: flex-start;
+  }
+
+  .countdown-unit {
+    min-width: 2.9rem;
+  }
+
+  .countdown-more button {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .countdown-more-when {
+    display: none;
+  }
+}
+
+/* Election wizard: schedule step. */
+.schedule-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--action-soft);
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+.schedule-note svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--action);
+}
+
+.schedule-summary {
+  color: var(--text-2);
+  font-size: 0.92rem;
+}
+
 .dash-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
@@ -3653,6 +4084,43 @@ select.input,
   font-size: 0.93rem;
 }
 
+/* Notices page, the ballot chooser and Help: a solid, framed board so the content
+   stands out from the console background instead of blending into it. */
+.notice-board,
+.ballot-board {
+  background: #ffffff;
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.notice-board > .card-head,
+.ballot-board > .card-head {
+  background: var(--surface);
+  border-bottom-color: var(--border-strong);
+}
+
+.notice-board .notice-feed li {
+  transition: background-color 0.15s ease;
+}
+
+.notice-board .notice-feed li:hover {
+  background: color-mix(in srgb, var(--surface-2) 45%, transparent);
+}
+
+:root[data-theme='dark'] .notice-board,
+:root[data-theme='dark'] .ballot-board {
+  background: var(--surface);
+}
+
+:root[data-theme='dark'] .notice-board > .card-head,
+:root[data-theme='dark'] .ballot-board > .card-head {
+  background: var(--surface-3);
+}
+
+.ballot-board-body {
+  padding: 16px 20px;
+}
+
 /* --------------------------------------------------------------- faq --- */
 
 .faq-item {
@@ -4313,6 +4781,11 @@ select.input,
   margin-bottom: 20px;
 }
 
+/* A page's one-line intro reads as the title's subtitle, so keep it close. */
+.site-page-title + .page-stack > .page-intro:first-child {
+  margin-top: -14px;
+}
+
 .site-stack {
   display: flex;
   flex-direction: column;
@@ -4488,10 +4961,100 @@ select.input,
   color: var(--tone-green);
 }
 
+/* Services page cards show their icon in the brand orange from the start. */
+.service-card .service-icon {
+  background: var(--brand-orange);
+  color: #ffffff;
+}
+
 .info-card {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* About page: the four points sit in an even 2 x 2 grid (one column on
+   phones), and every icon on the page is brand orange from the start. */
+.about-points {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.about-page .service-icon,
+.about-page .card-icon {
+  background: var(--brand-orange);
+  color: #ffffff;
+}
+
+/* Ledger blocks stretch to fill the row instead of leaving a gap. */
+.about-page .chain-strip {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+@media (max-width: 640px) {
+  .about-points {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Contact page: both boxes share one height, and each helpdesk detail is a
+   row with an orange icon; the rows share the height evenly. */
+.contact-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.contact-list {
+  flex: 1;
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.contact-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  background: var(--brand-orange);
+  color: #ffffff;
+}
+
+.contact-item div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.contact-item small {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.contact-item strong {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .contact-list {
+    grid-auto-rows: auto;
+  }
 }
 
 .check-form {
@@ -4618,7 +5181,6 @@ select.input,
   padding: 28px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-top: 4px solid var(--brand-orange);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
 }
@@ -4701,6 +5263,67 @@ select.input,
   color: var(--action-ink);
   font-weight: 600;
   font-size: 0.82rem;
+}
+
+/* Login: a larger card with roomier fields and bigger type. */
+.auth-card.login {
+  max-width: 600px;
+  gap: 20px;
+  padding: 44px 48px;
+}
+
+.auth-card.login .auth-brand {
+  gap: 18px;
+  margin-bottom: 4px;
+}
+
+.auth-card.login .auth-brand h1 {
+  font-size: 1.85rem;
+}
+
+.auth-card.login .auth-brand p {
+  font-size: 1rem;
+}
+
+.auth-card.login .field-label {
+  font-size: 0.98rem;
+}
+
+.auth-card.login .input {
+  min-height: 54px;
+  padding: 12px 16px;
+  font-size: 1.05rem;
+}
+
+.auth-card.login .btn-lg {
+  min-height: 56px;
+  font-size: 1.08rem;
+}
+
+.auth-card.login .link-btn,
+.auth-card.login .auth-switch {
+  font-size: 1rem;
+}
+
+.auth-card.login .demo-box {
+  padding: 18px;
+}
+
+.auth-card.login .demo-box > strong {
+  font-size: 0.95rem;
+}
+
+.auth-card.login .demo-row {
+  padding: 10px 12px;
+  font-size: 0.95rem;
+}
+
+.auth-card.login .demo-row small {
+  font-size: 0.84rem;
+}
+
+.auth-card.login .demo-use {
+  font-size: 0.9rem;
 }
 
 /* -------------------------------------------------------- responsive --- */
@@ -5064,6 +5687,14 @@ select.input,
     padding: 20px;
   }
 
+  .auth-card.login {
+    padding: 28px 20px;
+  }
+
+  .auth-card.login .auth-brand h1 {
+    font-size: 1.55rem;
+  }
+
   .toast {
     left: 16px;
     right: 16px;
@@ -5207,7 +5838,8 @@ select.input,
   .site-footer,
   .toast,
   .card-foot-actions,
-  .skip-link {
+  .skip-link,
+  .back-bar {
     display: none !important;
   }
 
@@ -5244,5 +5876,1318 @@ select.input,
 
   .election-row-actions {
     justify-content: flex-start;
+  }
+}
+
+/* Hover: the box keeps its normal border and lifts with a soft shadow;
+   the only orange on hover is the top bar below. Selected options keep
+   their orange selection frame. */
+.card,
+.service-tile,
+.service-card,
+.dept-card,
+.election-card,
+.stat,
+.option-card,
+.ballot-option,
+.back-btn,
+.election-row {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.dash-flat .card:hover {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.service-tile:hover,
+.service-card:hover,
+.dept-card:hover,
+.election-card:hover,
+.option-card:not(.selected):hover,
+.ballot-option:not(.selected):not(.disabled):hover,
+.back-btn:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.back-btn:hover,
+.back-btn:focus-visible {
+  border-color: var(--border-strong);
+  border-left-color: var(--brand-orange);
+}
+
+/* Top line: at rest a box has no orange line. On hover (or keyboard focus)
+   an orange bar sweeps across its top edge from left to right, and slides
+   back out when the pointer leaves. It is painted on an overlay that
+   inherits the box's rounded corners, so it follows the curve at both ends. */
+.card,
+.service-tile,
+.service-card,
+.dept-card,
+.election-card,
+.stat,
+.option-card,
+.ballot-option,
+.back-btn,
+.election-row,
+.auth-card {
+  position: relative;
+}
+
+.card::after,
+.service-tile::after,
+.service-card::after,
+.dept-card::after,
+.election-card::after,
+.stat::after,
+.option-card::after,
+.ballot-option::after,
+.back-btn::after,
+.election-row::after,
+.auth-card::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--brand-orange), var(--action)) left top / 0% 5px no-repeat;
+  transition: background-size 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.back-btn::after {
+  left: -4px;
+}
+
+.dash-flat .card::after {
+  content: none;
+}
+
+.card:hover::after,
+.service-tile:hover::after,
+.service-card:hover::after,
+.dept-card:hover::after,
+.election-card:hover::after,
+.stat:hover::after,
+.option-card:hover::after,
+.ballot-option:not(.disabled):hover::after,
+.back-btn:hover::after,
+.election-row:hover::after,
+.auth-card:hover::after,
+.auth-card:focus-within::after,
+.service-tile:focus-visible::after,
+.service-card:focus-visible::after,
+.dept-card:focus-visible::after,
+.stat-link:focus-visible::after,
+.back-btn:focus-visible::after {
+  background-size: 100% 5px;
+}
+
+/* Open dashboard: figures and election rows have no box at rest, so on
+   hover they get a soft tint with rounded corners under the top bar. */
+.dash-flat .stat:hover,
+.dash-flat .stat-link:hover,
+.dash-flat .stat-link:focus-visible,
+.election-row:hover {
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  transform: none;
+}
+
+/* Icon: while the top bar sweeps in, the box's icon turns solid orange
+   with a white glyph, and fades back to its own colour on leave. */
+.card-icon,
+.service-icon,
+.dept-icon,
+.stat-icon {
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover > .card-head > .card-icon,
+.card:hover > .service-icon,
+.service-tile:hover .service-icon,
+.service-card:hover .service-icon,
+.dept-card:hover .dept-icon,
+.stat:hover .stat-icon,
+.service-tile:focus-visible .service-icon,
+.service-card:focus-visible .service-icon,
+.dept-card:focus-visible .dept-icon,
+.stat-link:focus-visible .stat-icon {
+  background: var(--brand-orange);
+  color: #ffffff;
+  box-shadow: 0 6px 14px -6px var(--brand-orange);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-icon,
+  .service-icon,
+  .dept-icon,
+  .stat-icon,
+  .card,
+  .service-tile,
+  .service-card,
+  .dept-card,
+  .election-card,
+  .stat,
+  .option-card,
+  .ballot-option,
+  .back-btn,
+  .election-row,
+  .card::after,
+  .service-tile::after,
+  .service-card::after,
+  .dept-card::after,
+  .election-card::after,
+  .stat::after,
+  .option-card::after,
+  .ballot-option::after,
+  .back-btn::after,
+  .election-row::after,
+  .auth-card::after {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------- landing page look --- */
+/* Soft, airy landing in the brand colours: large rounded panels, pill
+   navigation and buttons, a phone-style panel with floating chips, big
+   boxless figures, a bento services grid and a dark rounded call to action. */
+
+:root {
+  --radius-xl: 32px;
+  --font-accent: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --bezel: #131d3b;
+}
+
+:root[data-theme='dark'] {
+  --bezel: #2a1d5c;
+}
+
+/* Public header: frosted bar with the links in one pill. */
+.site-header {
+  background: color-mix(in srgb, var(--header) 85%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  backdrop-filter: saturate(1.4) blur(12px);
+  box-shadow: none;
+}
+
+.site-nav {
+  flex: 0 1 auto;
+  gap: 2px;
+  margin-left: auto;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.site-nav button {
+  min-height: 36px;
+  padding: 6px 16px;
+  border-radius: 999px;
+}
+
+.site-nav button.active {
+  background: var(--brand-navy);
+  color: #ffffff;
+}
+
+:root[data-theme='dark'] .site-nav button.active {
+  background: var(--brand-orange);
+}
+
+.site-header .btn,
+.home .btn {
+  border-radius: 999px;
+}
+
+/* Page rhythm. */
+.home {
+  gap: 72px;
+}
+
+.home .card {
+  border-radius: 28px;
+}
+
+/* Side-by-side cards share one height. */
+.home .site-section.grid-2 {
+  gap: 20px;
+  align-items: stretch;
+}
+
+.home .site-section.grid-2 > .card {
+  height: 100%;
+}
+
+/* Search row: inputs and button on one baseline, same height. */
+.home .check-form .input,
+.home .check-form .btn {
+  min-height: 46px;
+}
+
+.home .check-form .input {
+  border-radius: 999px;
+  padding-inline: 18px;
+}
+
+.home .check-form .btn {
+  padding-inline: 22px;
+}
+
+/* Small pill label used above headings. */
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.hero-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand-orange);
+  box-shadow: 0 0 0 4px var(--action-soft);
+}
+
+/* Hero: a light, rounded panel with soft colour glows. */
+.home .hero {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 48px;
+  padding: 64px 56px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--brand-orange) 30%, transparent) 0, transparent 36%),
+    radial-gradient(circle at 62% 100%, color-mix(in srgb, var(--tone-violet-solid) 20%, transparent) 0, transparent 42%),
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, #ffffff 55%, transparent) 0, transparent 40%),
+    var(--surface);
+  box-shadow: none;
+  overflow: visible;
+}
+
+:root[data-theme='dark'] .home .hero {
+  background:
+    radial-gradient(circle at 92% 12%, rgba(255, 79, 1, 0.28) 0, transparent 36%),
+    radial-gradient(circle at 62% 100%, rgba(124, 77, 219, 0.28) 0, transparent 42%),
+    var(--surface);
+}
+
+.home .hero-copy {
+  --primary: inherit;
+  --text-2: inherit;
+  --muted: inherit;
+  color: var(--text);
+}
+
+.home .hero h1 {
+  margin-top: 20px;
+  font-size: clamp(2.6rem, 5.2vw, 4.5rem);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  color: var(--text);
+}
+
+.home .hero h1 em {
+  display: block;
+  font-family: var(--font-accent);
+  font-size: 1.12em;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--brand-orange);
+}
+
+.home .hero-lead {
+  margin-top: 20px;
+  max-width: 46ch;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+.home .hero-actions {
+  margin-top: 32px;
+}
+
+.home .hero-copy .btn-primary {
+  box-shadow: 0 14px 28px -12px rgba(255, 79, 1, 0.75);
+}
+
+.home .hero-copy .btn-secondary {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.home .hero-copy .btn-secondary:hover:not(:disabled) {
+  background: var(--surface-3);
+}
+
+.home .hero-note {
+  margin-top: 20px;
+  color: var(--muted);
+}
+
+/* Phone-style panel with the ballot count centred underneath it. */
+.hero-visual {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 16px;
+}
+
+.home .hero-visual .hero-panel {
+  width: 100%;
+}
+
+.home .hero-panel {
+  max-width: 400px;
+  margin-inline: auto;
+  padding: 34px 22px 24px;
+  border: 10px solid var(--bezel);
+  border-radius: 44px;
+  background: var(--surface);
+  box-shadow: 0 40px 80px -30px rgba(19, 4, 49, 0.5);
+}
+
+.home .hero-panel::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 72px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bezel);
+  opacity: 0.35;
+  transform: translateX(-50%);
+}
+
+.hero-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 20px 10px 10px;
+  white-space: nowrap;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.hero-chip strong {
+  display: block;
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.hero-chip small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.3;
+}
+
+.hero-chip-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--warning-soft);
+  color: var(--warning-ink);
+}
+
+.hero-chip-icon.accent {
+  background: var(--brand-orange);
+  color: #ffffff;
+}
+
+/* Big figures in one rounded strip, equal columns, centred, thin dividers. */
+.home-figures {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 32px 0;
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  background: var(--surface);
+}
+
+.home-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 20px;
+  border-left: 1px solid var(--border);
+  text-align: center;
+}
+
+.home-figure:first-child {
+  border-left: 0;
+}
+
+.home-figure strong {
+  position: relative;
+  font-size: clamp(2.4rem, 4vw, 3.4rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+/* The dot hangs outside the number so the number itself stays centred. */
+.home-figure strong::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: -14px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--brand-orange);
+}
+
+.home-figure span {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* Section headings, centred over their content. */
+.home-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 36px;
+  text-align: center;
+}
+
+.section-head.home-head h2 {
+  margin-top: 14px;
+  font-size: clamp(1.9rem, 3.4vw, 2.8rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.section-head.home-head p {
+  max-width: 60ch;
+  margin-top: 10px;
+  font-size: 1.02rem;
+}
+
+/* Services as a bento grid. */
+/* Three equal columns: Register fills the left column, the other four sit
+   in an even 2 x 2 block beside it. */
+.service-grid.bento {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: minmax(200px, auto);
+  gap: 16px;
+}
+
+.bento .service-tile {
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  box-shadow: none;
+}
+
+.bento .service-tile .service-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: auto;
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.bento .service-tile strong {
+  margin-top: 20px;
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
+}
+
+.bento .service-tile small {
+  font-size: 0.9rem;
+}
+
+.bento > :nth-child(1) {
+  grid-row: span 2;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 79, 1, 0.55) 0, transparent 45%),
+    linear-gradient(155deg, var(--brand-purple), var(--brand-navy));
+  color: #ffffff;
+}
+
+.bento > :nth-child(1) strong {
+  font-size: 1.7rem;
+}
+
+.bento .service-tile small {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.bento > :nth-child(1) .service-icon {
+  background: var(--brand-orange);
+  color: #ffffff;
+}
+
+/* The large symbol in the middle of the Register tile, with two soft rings
+   around it. */
+.service-emblem {
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 104px;
+  height: 104px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  background: linear-gradient(145deg, rgba(255, 79, 1, 0.95), rgba(255, 79, 1, 0.7));
+  color: #ffffff;
+  box-shadow:
+    0 0 0 14px rgba(255, 255, 255, 0.06),
+    0 0 0 30px rgba(255, 255, 255, 0.03),
+    0 18px 40px -12px rgba(255, 79, 1, 0.7);
+  transform: translate(-50%, -50%);
+  transition: transform 0.3s ease;
+  pointer-events: none;
+}
+
+.bento .service-tile:hover .service-emblem,
+.bento .service-tile:focus-visible .service-emblem {
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+/* The four smaller tiles: solid deep colours with white text, same in
+   both themes. */
+.bento > :nth-child(n + 2) {
+  color: #ffffff;
+}
+
+.bento > :nth-child(n + 2) .service-icon {
+  background: var(--brand-orange);
+  color: #ffffff;
+}
+
+.bento > :nth-child(2) {
+  background: #131036;
+}
+
+.bento > :nth-child(3) {
+  background: #130f36;
+}
+
+.bento > :nth-child(4) {
+  background: #130f36;
+}
+
+.bento > :nth-child(5) {
+  background: #130f36;
+}
+
+.service-go-round {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+}
+
+.bento .service-go-round {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.bento .service-tile:hover .service-go-round,
+.bento .service-tile:focus-visible .service-go-round {
+  background: var(--brand-orange);
+  color: #ffffff;
+  transform: rotate(-45deg);
+}
+
+/* Keep the orange icon on hover over the tinted icon backgrounds above. */
+.bento .service-tile:hover .service-icon,
+.bento .service-tile:focus-visible .service-icon {
+  background: var(--brand-orange);
+  color: #ffffff;
+  box-shadow: 0 6px 14px -6px var(--brand-orange);
+}
+
+/* Why-the-portal points. */
+.home-points {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.home-points li {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 26px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  background: #1d1033;
+  color: #ffffff;
+}
+
+.home-points li p {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.home-point-num {
+  font-family: var(--font-accent);
+  font-size: 2.6rem;
+  font-style: italic;
+  line-height: 1;
+  color: var(--brand-orange);
+}
+
+.home-points strong {
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+
+.home-points p {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+/* Closing call to action. */
+.home-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 56px;
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 79, 1, 0.55) 0, transparent 40%),
+    radial-gradient(circle at 0% 100%, rgba(223, 240, 216, 0.14) 0, transparent 40%),
+    linear-gradient(120deg, var(--brand-purple), var(--brand-navy));
+  color: #ffffff;
+}
+
+.home-cta h2 {
+  max-width: 22ch;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+}
+
+.home-cta p {
+  max-width: 56ch;
+  margin-top: 12px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.home-cta .btn-primary {
+  box-shadow: 0 14px 28px -12px rgba(255, 79, 1, 0.8);
+}
+
+@media (max-width: 1099px) {
+  .site-actions {
+    margin-left: auto;
+  }
+
+  .service-grid.bento {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bento > :nth-child(1) {
+    grid-row: auto;
+    grid-column: span 2;
+  }
+
+  .bento > :nth-child(2) {
+    grid-column: auto;
+  }
+
+  .home-points {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1023px) {
+  .home .hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 44px 32px;
+  }
+}
+
+@media (max-width: 719px) {
+  .home {
+    gap: 48px;
+  }
+
+  .home .hero {
+    gap: 24px;
+    padding: 32px 20px;
+    border-radius: 24px;
+  }
+
+  .home .hero h1 {
+    font-size: 2.5rem;
+  }
+
+  .hero-visual {
+    padding: 8px 0 0;
+  }
+
+  .home-figures {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 28px;
+    padding: 28px 0;
+    border-radius: 24px;
+  }
+
+  .home-figure,
+  .home-figure:first-child {
+    padding: 4px 12px;
+    border-left: 1px solid var(--border);
+  }
+
+  .home-figure:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .home-head {
+    margin-bottom: 24px;
+  }
+
+  .service-grid.bento,
+  .home-points {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .service-grid.bento {
+    grid-auto-rows: minmax(150px, auto);
+  }
+
+  .bento > :nth-child(n) {
+    grid-column: auto;
+  }
+
+  /* Short, narrow Register tile: the symbol moves to the right-hand side,
+     below the arrow, so it clears the title. The tile keeps enough height
+     for the arrow and the symbol to sit apart. */
+  .bento > :nth-child(1) {
+    min-height: 186px;
+  }
+
+  .service-emblem {
+    top: auto;
+    right: 28px;
+    bottom: 28px;
+    left: auto;
+    width: 72px;
+    height: 72px;
+    box-shadow:
+      0 0 0 10px rgba(255, 255, 255, 0.06),
+      0 14px 30px -12px rgba(255, 79, 1, 0.7);
+    transform: none;
+  }
+
+  .service-emblem svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .bento .service-tile:hover .service-emblem,
+  .bento .service-tile:focus-visible .service-emblem {
+    transform: scale(1.05);
+  }
+
+  .home-cta {
+    padding: 32px 22px;
+    border-radius: 24px;
+  }
+
+  .home-cta .btn {
+    width: 100%;
+  }
+}
+
+/* ------------------------------------------------ console background --- */
+
+/* Decorative layer behind the signed-in pages. Everything moves slowly and
+   in one direction (left to right), and it sits under the content. */
+:root {
+  --bg-orb-a: rgba(255, 79, 1, 0.16);
+  --bg-orb-b: rgba(51, 68, 154, 0.14);
+  --bg-orb-c: rgba(22, 163, 74, 0.16);
+  --bg-dot: rgba(19, 29, 59, 0.1);
+  --bg-pulse: rgba(255, 79, 1, 0.6);
+}
+
+:root[data-theme='dark'] {
+  --bg-orb-a: rgba(255, 79, 1, 0.14);
+  --bg-orb-b: rgba(91, 33, 182, 0.24);
+  --bg-orb-c: rgba(74, 91, 208, 0.18);
+  --bg-dot: rgba(231, 233, 251, 0.07);
+  --bg-pulse: rgba(255, 106, 43, 0.8);
+}
+
+.main {
+  position: relative;
+  isolation: isolate;
+}
+
+.console-bg {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: var(--sidebar-width);
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.console-orb {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.orb-a {
+  top: -18%;
+  right: -10%;
+  width: 56vmax;
+  height: 56vmax;
+  background: radial-gradient(circle, var(--bg-orb-a) 0, transparent 62%);
+  animation: console-drift-a 34s ease-in-out infinite alternate;
+}
+
+.orb-b {
+  bottom: -28%;
+  left: -14%;
+  width: 60vmax;
+  height: 60vmax;
+  background: radial-gradient(circle, var(--bg-orb-b) 0, transparent 62%);
+  animation: console-drift-b 40s ease-in-out infinite alternate;
+}
+
+.orb-c {
+  top: 30%;
+  left: 34%;
+  width: 40vmax;
+  height: 40vmax;
+  background: radial-gradient(circle, var(--bg-orb-c) 0, transparent 62%);
+  animation: console-drift-c 30s ease-in-out infinite alternate;
+}
+
+/* Faint dot grid, fading out towards the bottom-left. */
+.console-grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--bg-dot) 1.2px, transparent 1.6px);
+  background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(ellipse at 80% 0%, #000 0, transparent 72%);
+  mask-image: radial-gradient(ellipse at 80% 0%, #000 0, transparent 72%);
+}
+
+/* An empty lane for the update pulse to run along. */
+.console-chain {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 48px;
+  /* Fade both ends so the pulse eases in and out of view. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+}
+
+.chain-a {
+  top: 24%;
+}
+
+.chain-b {
+  top: 72%;
+  height: 36px;
+  opacity: 0.7;
+}
+
+/* A short orange streak running along the chain's link line. Its head is the
+   right end of a full-width strip, which slides across the screen. It is only
+   rendered for a few seconds after a notice or election update, and runs
+   twice on each chain. */
+.console-chain-pulse {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  margin-top: -1px;
+  background: linear-gradient(90deg, transparent calc(100% - 240px), var(--bg-pulse) calc(100% - 4px), transparent 100%);
+  transform: translateX(-100%);
+  opacity: 0;
+  animation: console-pulse 4.5s cubic-bezier(0.45, 0, 0.55, 1) 2 both;
+  will-change: transform;
+}
+
+.console-chain-pulse::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bg-pulse);
+  box-shadow: 0 0 12px 3px var(--bg-pulse);
+}
+
+.chain-b .console-chain-pulse {
+  animation-delay: 0.6s;
+}
+
+@keyframes console-pulse {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  80%,
+  100% {
+    transform: translateX(8%);
+    opacity: 0;
+  }
+}
+
+@keyframes console-drift-a {
+  to {
+    transform: translate(-12vw, 10vh) scale(1.08);
+  }
+}
+
+@keyframes console-drift-b {
+  to {
+    transform: translate(14vw, -8vh) scale(1.1);
+  }
+}
+
+@keyframes console-drift-c {
+  to {
+    transform: translate(10vw, -12vh) scale(0.92);
+  }
+}
+
+@media (max-width: 1023px) {
+  .console-bg {
+    left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .console-bg * {
+    animation: none !important;
+  }
+
+  .console-chain-pulse {
+    display: none;
+  }
+}
+
+@media print {
+  .console-bg {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------- dashboard boxes --- */
+/* The welcome and countdown boxes: deep indigo warming to maroon in the
+   top-right corner, with a faint grid over it. */
+
+:root {
+  --box-base: linear-gradient(160deg, #130732 0%, #130c34 55%, #141238 100%);
+  --box-glow: #73262a;
+  --box-glow-mid: rgba(80, 29, 42, 0.8);
+  --box-grid: rgba(255, 255, 255, 0.03);
+  --box-edge: rgba(255, 255, 255, 0.06);
+}
+
+:root[data-theme='dark'] {
+  --box-base: linear-gradient(160deg, #170a3d 0%, #160f3e 55%, #171543 100%);
+  --box-edge: rgba(255, 255, 255, 0.1);
+}
+
+.welcome,
+.countdown {
+  background:
+    linear-gradient(var(--box-grid) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, var(--box-grid) 1px, transparent 1px) 0 0 / 24px 24px,
+    radial-gradient(ellipse 65% 170% at 100% 0%, var(--box-glow) 0%, var(--box-glow-mid) 40%, rgba(19, 10, 52, 0) 80%),
+    var(--box-base);
+  border: 1px solid var(--box-edge);
+}
+
+.countdown {
+  border-left: 5px solid var(--brand-orange);
+}
+
+.countdown-soon {
+  border-left-color: #7dd3fc;
+}
+
+/* ----------------------------------------------------- news ticker --- */
+/* "What's New" strip on the dashboards, in the style of a college notice
+   bar: a black label with an arrow, then running elections scrolling right
+   to left, each with a "Running" badge. Two copies of the list sit side by
+   side so the loop is seamless. */
+
+.ticker {
+  --ticker-bg: #f1efea;
+  --ticker-edge: #e2ddd2;
+  --ticker-ink: #26233a;
+  --ticker-rule: #8d8a99;
+  display: flex;
+  align-items: stretch;
+  min-height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--ticker-bg);
+  border: 1px solid var(--ticker-edge);
+  box-shadow: var(--shadow-sm);
+  color: var(--ticker-ink);
+  overflow: hidden;
+}
+
+:root[data-theme='dark'] .ticker {
+  --ticker-bg: #27223f;
+  --ticker-edge: rgba(255, 255, 255, 0.12);
+  --ticker-ink: #ebe8f5;
+  --ticker-rule: rgba(255, 255, 255, 0.35);
+}
+
+.ticker-label {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0 20px 0 16px;
+  background: #0b0b10;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* The arrow on the label pointing into the feed. */
+.ticker-label::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  border-style: solid;
+  border-width: 11px 0 11px 11px;
+  border-color: transparent transparent transparent #0b0b10;
+  transform: translateY(-50%);
+}
+
+.ticker-viewport {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  margin-left: 11px;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+}
+
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker-scroll 40s linear infinite;
+}
+
+.ticker:hover .ticker-track,
+.ticker:focus-within .ticker-track,
+.ticker.is-paused .ticker-track {
+  animation-play-state: paused;
+}
+
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.ticker-group {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ticker-item {
+  display: flex;
+  align-items: center;
+}
+
+/* A thin "|" between items. */
+.ticker-item::after {
+  content: '';
+  width: 1px;
+  height: 16px;
+  margin: 0 24px;
+  background: var(--ticker-rule);
+}
+
+.ticker-item button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 2px;
+  border: 0;
+  background: none;
+  color: var(--ticker-ink);
+  font: inherit;
+  font-size: 0.92rem;
+  font-style: italic;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ticker-item button:hover .ticker-text,
+.ticker-item button:focus-visible .ticker-text {
+  color: var(--brand-orange);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.ticker-item button:focus-visible {
+  outline: 2px solid var(--brand-orange);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ticker-tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.ticker-tag-live {
+  background: #ffb400;
+  color: #1f1600;
+}
+
+.ticker-tag-soon {
+  background: #2f7de1;
+  color: #ffffff;
+}
+
+.ticker-item button:hover .ticker-tag-live,
+.ticker-item button:focus-visible .ticker-tag-live {
+  background: var(--brand-orange);
+  color: #ffffff;
+}
+
+.ticker-toggle {
+  flex: none;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: 0 8px 0 4px;
+  border-radius: 50%;
+  border: 1px solid var(--ticker-edge);
+  background: transparent;
+  color: var(--ticker-ink);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.ticker-toggle:hover,
+.ticker-toggle:focus-visible {
+  background: var(--brand-orange);
+  border-color: var(--brand-orange);
+  color: #ffffff;
+}
+
+.ticker-toggle:focus-visible {
+  outline: 2px solid var(--brand-orange);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .ticker-label {
+    padding: 0 14px 0 12px;
+    font-size: 0.85rem;
+  }
+
+  .ticker-item button {
+    font-size: 0.86rem;
+  }
+}
+
+/* No motion: the feed stays still and scrolls sideways by hand. */
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+
+  .ticker-viewport {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .ticker-group[aria-hidden='true'],
+  .ticker-toggle {
+    display: none;
+  }
+}
+
+@media print {
+  .ticker {
+    display: none;
   }
 }

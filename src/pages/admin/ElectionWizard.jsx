@@ -2,7 +2,7 @@
 // Fields appear only when the chosen scope, method or mode needs them.
 
 import { useMemo, useState } from 'react'
-import { ArrowLeft, ArrowRight, Info, Pencil, Plus, Rocket, Save, Trash2, Users } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Clock3, Info, Pencil, Plus, Rocket, Save, Trash2, Users } from 'lucide-react'
 import { useApp } from '../../context'
 import { DEPARTMENTS, YEARS, academicLine } from '../../college'
 import { newId } from '../../store'
@@ -11,11 +11,15 @@ import {
   MODE_META,
   SCOPE_META,
   committeeVoterIds,
+  countdownParts,
   eligibilityLabel,
   electionStatus,
   formatDateTime,
+  fromIstInput,
+  istAt,
   registeredEligibleCount,
   scopeLabel,
+  toIstInput,
 } from '../../elections'
 import { Alert, Avatar, Card, ConfirmModal, EmptyState, Field, ReviewBadge, Stepper } from '../../components/ui'
 import { RestrictedPage } from '../SystemPages'
@@ -33,26 +37,6 @@ const STEPS = [
 
 const CATEGORIES = ['Student Council', 'Department Committee', 'Year Representative', 'Committee', 'Club']
 
-function localInput(iso) {
-  if (!iso) return ''
-  const date = new Date(iso)
-  const pad = (value) => String(value).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
-
-function fromLocalInput(value) {
-  if (!value) return ''
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '' : date.toISOString()
-}
-
-function at(days, hour) {
-  const date = new Date()
-  date.setDate(date.getDate() + days)
-  date.setHours(hour, 0, 0, 0)
-  return date.toISOString()
-}
-
 function blankElection() {
   return {
     id: newId('election'),
@@ -69,8 +53,8 @@ function blankElection() {
     eligibility: { departments: [], years: [] },
     electorate: null,
     baseTurnout: 0,
-    startsAt: at(1, 9),
-    endsAt: at(2, 17),
+    startsAt: istAt(1, 9),
+    endsAt: istAt(2, 17),
     resultsVisibility: 'live',
     published: false,
     closedAt: null,
@@ -80,6 +64,12 @@ function blankElection() {
 
 function blankCandidate(positionId) {
   return { name: '', department: '', year: '', about: '', manifesto: '', priorities: '', verified: false, positionId }
+}
+
+function durationLabel(ms) {
+  const { days, hours, minutes } = countdownParts(ms)
+  const part = (n, unit) => (n ? `${n} ${unit}${n === 1 ? '' : 's'}` : null)
+  return [part(days, 'day'), part(hours, 'hour'), part(minutes, 'minute')].filter(Boolean).join(' ') || 'under a minute'
 }
 
 function validate(step, draft, field) {
@@ -114,12 +104,12 @@ function validate(step, draft, field) {
     })
   }
   if (step === 6) {
-    if (!draft.startsAt) errors.startsAt = 'Choose when voting opens.'
-    if (!draft.endsAt) errors.endsAt = 'Choose when voting closes.'
+    if (!draft.startsAt) errors.startsAt = 'Choose the start date and time.'
+    if (!draft.endsAt) errors.endsAt = 'Choose the end date and time.'
     if (draft.startsAt && draft.endsAt && Date.parse(draft.endsAt) <= Date.parse(draft.startsAt)) {
-      errors.endsAt = 'Voting must close after it opens.'
+      errors.endsAt = 'The end time must be after the start time.'
     }
-    if (draft.endsAt && Date.parse(draft.endsAt) <= Date.now()) errors.endsAt = 'Voting must close in the future.'
+    if (draft.endsAt && Date.parse(draft.endsAt) <= Date.now()) errors.endsAt = 'The end time must be in the future.'
   }
   return errors
 }
@@ -653,30 +643,44 @@ export function ElectionWizardPage({ id }) {
 
     // 7. Schedule
     <div className="form-stack" key="schedule">
+      <p className="schedule-note">
+        <Clock3 size={16} aria-hidden="true" />
+        <span>
+          Enter both times in <strong>Indian Standard Time (IST, UTC+05:30)</strong>. Voting opens and closes
+          automatically at these times.
+        </span>
+      </p>
       <div className="form-grid two">
-        <Field label="Voting opens" required error={errors.startsAt}>
+        <Field label="Start date & time (IST)" required error={errors.startsAt}>
           {(fieldId) => (
             <input
               id={fieldId}
               className="input"
               type="datetime-local"
-              value={localInput(draft.startsAt)}
-              onChange={(event) => update({ startsAt: fromLocalInput(event.target.value) })}
+              value={toIstInput(draft.startsAt)}
+              onChange={(event) => update({ startsAt: fromIstInput(event.target.value) })}
             />
           )}
         </Field>
-        <Field label="Voting closes" required error={errors.endsAt}>
+        <Field label="End date & time (IST)" required error={errors.endsAt}>
           {(fieldId) => (
             <input
               id={fieldId}
               className="input"
               type="datetime-local"
-              value={localInput(draft.endsAt)}
-              onChange={(event) => update({ endsAt: fromLocalInput(event.target.value) })}
+              value={toIstInput(draft.endsAt)}
+              min={toIstInput(draft.startsAt) || undefined}
+              onChange={(event) => update({ endsAt: fromIstInput(event.target.value) })}
             />
           )}
         </Field>
       </div>
+      {draft.startsAt && draft.endsAt && Date.parse(draft.endsAt) > Date.parse(draft.startsAt) && (
+        <p className="schedule-summary">
+          Voting runs for <strong>{durationLabel(Date.parse(draft.endsAt) - Date.parse(draft.startsAt))}</strong>, from{' '}
+          {formatDateTime(draft.startsAt)} to {formatDateTime(draft.endsAt)}.
+        </p>
+      )}
       <fieldset className="check-group">
         <legend>Results visibility</legend>
         <div className="option-grid two" role="radiogroup" aria-label="Results visibility">

@@ -19,6 +19,7 @@ import {
   Plus,
   Receipt,
   UsersRound,
+  Vote,
   X,
 } from 'lucide-react'
 import { useApp } from '../context'
@@ -42,74 +43,86 @@ function BallotChooser() {
   const upcoming = mine.filter((election) => electionState(election).status === 'upcoming')
 
   return (
-    <div className="page-stack narrow">
-      <Card title="Choose a ballot" subtitle="Elections open for you right now">
-        {toVote.length === 0 ? (
-          <EmptyState
-            title={done.length ? 'You have voted in every open election' : 'No active elections'}
-            copy={done.length ? 'Your receipts are saved in My Receipts.' : 'There are currently no elections available for you.'}
-          >
-            <button type="button" className="btn btn-secondary" onClick={() => navigate('elections')}>
-              View Upcoming Elections
-            </button>
-          </EmptyState>
-        ) : (
-          <ul className="choice-list">
-            {toVote.map((election) => (
-              <li key={election.id}>
-                <div>
-                  <strong>{election.title}</strong>
-                  <small>
-                    {election.positions.map((position) => position.title).join(', ')} · {METHOD_META[election.method].label} · closes{' '}
-                    {formatDate(election.endsAt)}
-                  </small>
-                </div>
-                <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate('vote', election.id)}>
-                  Start ballot <ArrowRight size={15} aria-hidden="true" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+    <div className="page-stack">
+      <Card
+        flush
+        className="ballot-board"
+        title="Choose a ballot"
+        subtitle="Elections open for you right now"
+        icon={<Vote size={18} />}
+      >
+        <div className="ballot-board-body">
+          {toVote.length === 0 ? (
+            <EmptyState
+              title={done.length ? 'You have voted in every open election' : 'No active elections'}
+              copy={done.length ? 'Your receipts are saved in My Receipts.' : 'There are currently no elections available for you.'}
+            >
+              <button type="button" className="btn btn-secondary" onClick={() => navigate('elections')}>
+                View Upcoming Elections
+              </button>
+            </EmptyState>
+          ) : (
+            <ul className="choice-list">
+              {toVote.map((election) => (
+                <li key={election.id}>
+                  <div>
+                    <strong>{election.title}</strong>
+                    <small>
+                      {election.positions.map((position) => position.title).join(', ')} · {METHOD_META[election.method].label} · closes{' '}
+                      {formatDate(election.endsAt)}
+                    </small>
+                  </div>
+                  <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate('vote', election.id)}>
+                    Start ballot <ArrowRight size={15} aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </Card>
 
       {done.length > 0 && (
-        <Card title="Already voted">
-          <ul className="choice-list">
-            {done.map((election) => (
-              <li key={election.id}>
-                <div>
-                  <strong>{election.title}</strong>
-                  <small>
-                    <CheckCircle2 size={13} aria-hidden="true" /> Vote recorded
-                  </small>
-                </div>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => navigate('receipt', election.id)}>
-                  View receipt
-                </button>
-              </li>
-            ))}
-          </ul>
+        <Card flush className="ballot-board" title="Already voted" icon={<CheckCircle2 size={18} />}>
+          <div className="ballot-board-body">
+            <ul className="choice-list">
+              {done.map((election) => (
+                <li key={election.id}>
+                  <div>
+                    <strong>{election.title}</strong>
+                    <small>
+                      <CheckCircle2 size={13} aria-hidden="true" /> Vote recorded
+                    </small>
+                  </div>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => navigate('receipt', election.id)}>
+                    View receipt
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         </Card>
       )}
 
       {upcoming.length > 0 && (
-        <Card title="Opening soon">
-          <ul className="choice-list">
-            {upcoming.map((election) => (
-              <li key={election.id}>
-                <div>
-                  <strong>{election.title}</strong>
-                  <small>
-                    <Clock3 size={13} aria-hidden="true" /> Opens {formatDateTime(election.startsAt)}
-                  </small>
-                </div>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('election', election.id)}>
-                  Details
-                </button>
-              </li>
-            ))}
-          </ul>
+        <Card flush className="ballot-board" title="Opening soon" icon={<Clock3 size={18} />}>
+          <div className="ballot-board-body">
+            <ul className="choice-list">
+              {upcoming.map((election) => (
+                <li key={election.id}>
+                  <div>
+                    <strong>{election.title}</strong>
+                    <small>
+                      <Clock3 size={13} aria-hidden="true" /> Opens {formatDateTime(election.startsAt)}
+                    </small>
+                  </div>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('election', election.id)}>
+                    Details
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         </Card>
       )}
     </div>
