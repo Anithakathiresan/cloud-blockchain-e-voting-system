@@ -19,6 +19,7 @@ import { DEPARTMENTS, departmentLabel, yearLabel } from '../college'
 import { searchVoters } from '../db'
 import { formatDate } from '../elections'
 import { Badge, Card, EmptyState, StatusBadge } from '../components/ui'
+import { AuthBackdrop } from '../components/AuthBackdrop'
 import { LedgerCard, NoticesCard } from './Dashboard'
 
 export function serviceTiles(t, { navigate, goToVote }) {
@@ -64,6 +65,7 @@ export function HomePage() {
 
   return (
     <div className="site-stack home">
+      <AuthBackdrop />
       <section className="hero">
         <div className="hero-copy">
           <p className="hero-pill">

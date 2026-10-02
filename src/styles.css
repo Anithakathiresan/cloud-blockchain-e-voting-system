@@ -1469,6 +1469,24 @@ img {
   color: var(--success-ink);
 }
 
+/* In the console the tints sit on a solid surface, so the animated
+   backdrop does not show through the dark theme's translucent tints. */
+.main .alert-info {
+  background: linear-gradient(var(--info-soft), var(--info-soft)), var(--surface);
+}
+
+.main .alert-warning {
+  background: linear-gradient(var(--warning-soft), var(--warning-soft)), var(--surface);
+}
+
+.main .alert-error {
+  background: linear-gradient(var(--error-soft), var(--error-soft)), var(--surface);
+}
+
+.main .alert-success {
+  background: linear-gradient(var(--success-soft), var(--success-soft)), var(--surface);
+}
+
 .card .alert + *,
 .card * + .alert {
   margin-top: 12px;
@@ -2889,6 +2907,22 @@ select.input,
   transform: none;
 }
 
+/* The animated backdrop runs behind the console, so the summary strip and
+   each section sit on a solid panel: the network shows only in the gaps
+   between them, never through the text. */
+.dash-flat .stat-grid,
+.dash-flat .card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.dash-flat .card {
+  padding: 18px 20px 20px;
+}
+
+
 /* Election list rows on the student dashboard. */
 .election-row {
   position: relative;
@@ -3040,13 +3074,14 @@ select.input,
 }
 
 .ledger-valid {
-  background: var(--success-soft);
+  /* Tint on a solid surface so the animated backdrop never shows through. */
+  background: linear-gradient(var(--success-soft), var(--success-soft)), var(--surface);
   border-color: var(--success-line);
   color: var(--success-ink);
 }
 
 .ledger-broken {
-  background: var(--error-soft);
+  background: linear-gradient(var(--error-soft), var(--error-soft)), var(--surface);
   border-color: var(--error-line);
   color: var(--error-ink);
 }
@@ -5326,6 +5361,51 @@ select.input,
   font-size: 0.9rem;
 }
 
+/* Sign-in page backdrop: two soft glows and the moving network canvas, fixed
+   behind everything (the header's blur shows it through). */
+.auth-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.auth-bg-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.auth-bg-glow {
+  position: absolute;
+  width: 52vmax;
+  height: 52vmax;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.glow-a {
+  top: -22%;
+  left: -14%;
+  background: radial-gradient(circle, var(--bg-orb-a) 0, transparent 62%);
+  animation: console-drift-b 36s ease-in-out infinite alternate;
+}
+
+.glow-b {
+  right: -16%;
+  bottom: -26%;
+  background: radial-gradient(circle, var(--bg-orb-b) 0, transparent 62%);
+  animation: console-drift-a 42s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-bg-glow {
+    animation: none;
+  }
+}
+
 /* -------------------------------------------------------- responsive --- */
 
 @media (max-width: 1279px) {
@@ -5896,8 +5976,8 @@ select.input,
 }
 
 .dash-flat .card:hover {
-  border-color: transparent;
-  box-shadow: none;
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
 .service-tile:hover,
@@ -6160,7 +6240,8 @@ select.input,
   box-shadow: 0 0 0 4px var(--action-soft);
 }
 
-/* Hero: a light, rounded panel with soft colour glows. */
+/* Hero: a light, rounded panel with soft colour glows. Its fill is partly
+   see-through so the page's network backdrop shows faintly behind it. */
 .home .hero {
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   gap: 48px;
@@ -6171,7 +6252,7 @@ select.input,
     radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--brand-orange) 30%, transparent) 0, transparent 36%),
     radial-gradient(circle at 62% 100%, color-mix(in srgb, var(--tone-violet-solid) 20%, transparent) 0, transparent 42%),
     radial-gradient(circle at 0% 0%, color-mix(in srgb, #ffffff 55%, transparent) 0, transparent 40%),
-    var(--surface);
+    color-mix(in srgb, var(--surface) 64%, transparent);
   box-shadow: none;
   overflow: visible;
 }
@@ -6180,7 +6261,7 @@ select.input,
   background:
     radial-gradient(circle at 92% 12%, rgba(255, 79, 1, 0.28) 0, transparent 36%),
     radial-gradient(circle at 62% 100%, rgba(124, 77, 219, 0.28) 0, transparent 42%),
-    var(--surface);
+    color-mix(in srgb, var(--surface) 64%, transparent);
 }
 
 .home .hero-copy {

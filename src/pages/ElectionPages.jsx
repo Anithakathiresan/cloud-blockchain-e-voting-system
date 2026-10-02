@@ -17,6 +17,7 @@ import {
   resultsAvailability,
 } from '../elections'
 import { CandidateCard, ElectionCard } from '../components/election'
+import { AuthBackdrop } from '../components/AuthBackdrop'
 import { Alert, Badge, Card, EmptyState, ErrorState, KeyValue, PageIntro, SearchInput, StatusBadge, Tabs } from '../components/ui'
 
 // An election "applies" to a department/year when its eligibility covers it.
@@ -87,6 +88,8 @@ export function ElectionsPage() {
 
   return (
     <div className="page-stack">
+      {/* Signed in, the console layout already draws it. */}
+      {!voter && <AuthBackdrop />}
       <PageIntro
         actions={
           isAdmin && (

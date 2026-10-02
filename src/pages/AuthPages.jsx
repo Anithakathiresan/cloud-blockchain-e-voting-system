@@ -5,6 +5,7 @@ import { AlertCircle, Eye, EyeOff, LogIn, ShieldCheck, UserPlus } from 'lucide-r
 import { useApp } from '../context'
 import { DEPARTMENTS, YEARS } from '../college'
 import { BrandMark } from '../components/Layout'
+import { AuthBackdrop } from '../components/AuthBackdrop'
 
 function PasswordInput({ id, value, onChange, autoComplete, t }) {
   const [visible, setVisible] = useState(false)
@@ -54,6 +55,7 @@ export function LoginPage({ notice }) {
 
   return (
     <section className="auth-wrap">
+      <AuthBackdrop />
       <form className="auth-card login" onSubmit={submit} noValidate>
         <div className="auth-brand">
           <BrandMark size={52} />

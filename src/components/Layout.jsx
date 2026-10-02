@@ -37,6 +37,7 @@ import { academicLine } from '../college'
 import { relativeTime } from '../elections'
 import { fill } from '../locale'
 import { Avatar } from './ui'
+import { AuthBackdrop } from './AuthBackdrop'
 
 // Detail pages highlight the list they belong to.
 const NAV_PARENT = {
@@ -475,6 +476,7 @@ export function ConsoleLayout({ title, crumbs, back, children }) {
       </a>
       <Sidebar open={drawer} onClose={() => setDrawer(false)} />
       <div className="main">
+        <AuthBackdrop />
         <ConsoleBackdrop />
         <header className="topbar">
           <button

@@ -20,6 +20,7 @@ import { useApp } from '../context'
 import { compactHash } from '../chain'
 import { formatNumber, formatPeriod, scopeLabel } from '../elections'
 import { Card, EmptyState, Field, StatusBadge } from '../components/ui'
+import { AuthBackdrop } from '../components/AuthBackdrop'
 import { serviceTiles } from './HomePage'
 
 export function AboutPage() {
@@ -33,6 +34,7 @@ export function AboutPage() {
 
   return (
     <div className="page-stack about-page">
+      <AuthBackdrop />
       <div className="section-head">
         <h1>{t.aboutTitle}</h1>
         <p>{t.aboutSubtitle}</p>
@@ -89,6 +91,7 @@ export function ServicesPage() {
 
   return (
     <div className="page-stack">
+      <AuthBackdrop />
       <div className="section-head">
         <h1>{t.servicesHeading}</h1>
         <p>{t.servicesSubheading}</p>
@@ -131,6 +134,7 @@ export function ContactPage() {
 
   return (
     <div className="page-stack">
+      <AuthBackdrop />
       <div className="section-head">
         <h1>{t.contactTitle}</h1>
         <p>{t.contactSubtitle}</p>
