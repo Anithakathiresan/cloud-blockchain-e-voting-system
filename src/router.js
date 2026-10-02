@@ -26,6 +26,7 @@ export const PUBLIC_PAGES = new Set([
   'election',
   'candidates',
   'candidate',
+  'ballot',
   'results',
   'ledger',
   'notices',

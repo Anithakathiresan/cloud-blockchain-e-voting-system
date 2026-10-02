@@ -144,7 +144,7 @@ export function ElectionsPage() {
 }
 
 export function ElectionDetailPage({ id }) {
-  const { elections, electionState, candidates, isAdmin, voter, navigate, voters, committee, tallies } = useApp()
+  const { elections, electionState, candidates, isAdmin, voter, navigate, signIn, voters, committee, tallies } = useApp()
   const election = elections.find((entry) => entry.id === id)
 
   if (!election) {
@@ -212,7 +212,7 @@ export function ElectionDetailPage({ id }) {
             </button>
           )}
           {!voter && state.status === 'open' && (
-            <button type="button" className="btn btn-primary" onClick={() => navigate('login')}>
+            <button type="button" className="btn btn-primary" onClick={signIn}>
               Sign in to vote
             </button>
           )}

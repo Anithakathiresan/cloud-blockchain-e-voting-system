@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import {
   AlertCircle,
   BarChart3,
@@ -72,12 +73,14 @@ import {
 } from './elections'
 import { ConsoleLayout, PublicLayout } from './components/Layout'
 import { ErrorBoundary } from './components/ui'
+import { SignInIntro } from './components/SignInIntro'
 import { CheckDetails, HomePage } from './pages/HomePage'
 import { LoginPage, RegisterPage } from './pages/AuthPages'
 import { AdminDashboard, ProfilePage, StudentDashboard } from './pages/Dashboard'
 import { ElectionDetailPage, ElectionsPage } from './pages/ElectionPages'
 import { CandidateProfilePage, CandidatesPage } from './pages/CandidatePages'
 import { ConfirmationPage, VotePage } from './pages/VotePage'
+import { BallotPage } from './pages/BallotPage'
 import { ResultsPage } from './pages/ResultsPage'
 import { LedgerPage, ReceiptPage, ReceiptsPage } from './pages/ReceiptPages'
 import { HelpPage, NotFoundPage, NoticesPage, RestrictedPage, SettingsPage } from './pages/SystemPages'
@@ -146,6 +149,18 @@ function initialRoute(signedIn) {
 
 const routeKey = (entry) => `${entry.page}/${entry.id ?? ''}`
 
+// Page changes run through the browser's View Transitions API, so the old page
+// fades out and the new one rises in. Browsers without it, and users who ask
+// for reduced motion, get the plain instant swap.
+function withPageTransition(update) {
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  if (!document.startViewTransition || reduce) {
+    update()
+    return
+  }
+  document.startViewTransition(() => flushSync(update))
+}
+
 function App() {
   const [language, setLanguage] = useState(() => readStorage(LANG_KEY) || 'en')
   const [theme, setTheme] = useState(() => (readStorage(THEME_KEY) === 'dark' ? 'dark' : 'light'))
@@ -163,6 +178,8 @@ function App() {
   const [ballotDrafts, setBallotDrafts] = useState({})
   const [now, setNow] = useState(() => Date.now())
   const [toast, setToast] = useState(null)
+  // The page a Sign in click came from, while the intro scene plays over it.
+  const [signInFrom, setSignInFrom] = useState(null)
   const toastTimer = useRef(null)
 
   // English is the fallback for any key a language does not define.
@@ -197,10 +214,11 @@ function App() {
   }, [])
 
   useEffect(() => {
-    const onHash = () => {
-      moveTo(parseHash())
-      window.scrollTo({ top: 0 })
-    }
+    const onHash = () =>
+      withPageTransition(() => {
+        moveTo(parseHash())
+        window.scrollTo({ top: 0 })
+      })
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [moveTo])
@@ -321,8 +339,10 @@ function App() {
   const navigate = useCallback((page, id = null) => {
     const hash = hashFor(page, id)
     if (window.location.hash === hash) {
-      moveTo({ page, id })
-      window.scrollTo({ top: 0 })
+      withPageTransition(() => {
+        moveTo({ page, id })
+        window.scrollTo({ top: 0 })
+      })
     } else {
       window.location.hash = hash
     }
@@ -332,6 +352,12 @@ function App() {
   useEffect(() => {
     if (voter && (route.page === 'login' || route.page === 'register')) navigate('dashboard')
   }, [voter, route.page, navigate])
+
+  // Once the page changes, the sign-in scene is spent; coming back to the page
+  // it started from must not replay it.
+  useEffect(() => {
+    setSignInFrom((from) => (from && from !== `${route.page}/${route.id}` ? null : from))
+  }, [route.page, route.id])
 
   const candidates = useMemo(
     () =>
@@ -470,6 +496,17 @@ function App() {
   }
 
   const goToVote = () => navigate(voter ? 'vote' : 'login')
+
+  // Sign in buttons play the short ballot-unit scene, then open the login page.
+  // Reduced motion, or already being on the login page, goes straight there.
+  const signIn = () => {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduce || route.page === 'login') {
+      navigate('login')
+      return
+    }
+    setSignInFrom(`${route.page}/${route.id}`)
+  }
 
   // The voter card is the student's own roll entry, written out as text.
   const downloadCard = () => {
@@ -645,6 +682,7 @@ function App() {
     pickCandidate,
     castBallot,
     goToVote,
+    signIn,
     downloadCard,
     showToast,
     admin,
@@ -692,6 +730,14 @@ function App() {
       crumbs: [{ label: t.uiCastVote, page: 'vote' }, { label: t.uiStepReceipt }],
       element: <ConfirmationPage id={id} />,
     }),
+    ballot: () => {
+      const election = findElection()
+      return {
+        title: t.uiCastVote,
+        crumbs: [{ label: t.navHome, page: 'home' }, { label: election?.published ? election.title : 'Ballot' }],
+        element: <BallotPage key={id} id={id} />,
+      }
+    },
     results: () => ({ title: t.uiResults, crumbs: [{ label: t.uiResults }], element: <ResultsPage id={id} /> }),
     receipts: () => ({ title: t.uiMyReceipts, crumbs: [{ label: t.uiMyReceipts }], element: <ReceiptsPage /> }),
     receipt: () => ({
@@ -899,6 +945,10 @@ function App() {
           )}
         </PublicLayout>
       )}
+
+      {/* Shown only while still on the page it started from, so it leaves in the
+          same render as the page change and Back mid-scene just drops it. */}
+      {signInFrom === `${page}/${id}` && <SignInIntro onDone={() => navigate('login')} />}
 
       {toast && (
         <div className={`toast toast-${toast.tone}`} role={toast.tone === 'error' ? 'alert' : 'status'}>

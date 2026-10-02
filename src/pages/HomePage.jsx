@@ -1,13 +1,14 @@
 // Public landing page: what is open now, the student services, the voter
 // roll lookup, notices and the ledger status.
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   AlertCircle,
   ArrowRight,
   BarChart3,
   CalendarDays,
   LogIn,
+  Maximize2,
   Search,
   ShieldCheck,
   UserPlus,
@@ -20,12 +21,13 @@ import { searchVoters } from '../db'
 import { formatDate } from '../elections'
 import { Badge, Card, EmptyState, StatusBadge } from '../components/ui'
 import { AuthBackdrop } from '../components/AuthBackdrop'
+import { ElectionSpotlight } from '../components/ElectionSpotlight'
 import { LedgerCard, NoticesCard } from './Dashboard'
 
-export function serviceTiles(t, { navigate, goToVote }) {
+export function serviceTiles(t, { navigate, goToVote, signIn }) {
   return [
     { icon: <UserPlus size={20} />, title: t.svcRegister, sub: t.svcRegisterSub, go: () => navigate('register') },
-    { icon: <LogIn size={20} />, title: t.svcLogin, sub: t.svcLoginSub, go: () => navigate('login') },
+    { icon: <LogIn size={20} />, title: t.svcLogin, sub: t.svcLoginSub, go: signIn },
     { icon: <UsersRound size={20} />, title: t.svcCandidates, sub: t.svcCandidatesSub, go: () => navigate('candidates') },
     { icon: <Vote size={20} />, title: t.svcCastVote, sub: t.svcCastVoteSub, go: goToVote },
     { icon: <BarChart3 size={20} />, title: t.svcResults, sub: t.svcResultsSub, go: () => navigate('results') },
@@ -40,14 +42,36 @@ function splitTitle(title) {
 }
 
 export function HomePage() {
-  const { t, navigate, goToVote, voter, elections, candidates, chain, electionState } = useApp()
-  const services = serviceTiles(t, { navigate, goToVote })
+  const { t, navigate, goToVote, signIn, voter, elections, candidates, chain, electionState } = useApp()
+  const services = serviceTiles(t, { navigate, goToVote, signIn })
   const live = elections
     .filter((election) => ['open', 'upcoming'].includes(electionState(election).status))
     .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
     .slice(0, 4)
   const ballots = chain.filter((block) => block.type !== 'genesis').length
   const [titleLead, titleAccent] = splitTitle(t.heroTitle)
+  const [spotlight, setSpotlight] = useState(false)
+
+  // The quick view opens by itself once per browser session; the hero panel
+  // button brings it back.
+  useEffect(() => {
+    let seen = false
+    try {
+      seen = sessionStorage.getItem('spotlight-seen') === '1'
+    } catch {
+      // Storage blocked: still show it, just without remembering.
+    }
+    if (seen) return
+    const timer = setTimeout(() => {
+      setSpotlight(true)
+      try {
+        sessionStorage.setItem('spotlight-seen', '1')
+      } catch {
+        // See above.
+      }
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [])
 
   const figures = [
     { value: elections.filter((election) => election.published).length, label: t.uiElections },
@@ -66,6 +90,7 @@ export function HomePage() {
   return (
     <div className="site-stack home">
       <AuthBackdrop />
+      {spotlight && <ElectionSpotlight onClose={() => setSpotlight(false)} />}
       <section className="hero">
         <div className="hero-copy">
           <p className="hero-pill">
@@ -85,7 +110,7 @@ export function HomePage() {
               </button>
             ) : (
               <>
-                <button type="button" className="btn btn-primary btn-lg" onClick={() => navigate('login')}>
+                <button type="button" className="btn btn-primary btn-lg" onClick={signIn}>
                   <LogIn size={17} aria-hidden="true" /> Sign in to vote
                 </button>
                 <button type="button" className="btn btn-secondary btn-lg" onClick={() => navigate('register')}>
@@ -105,9 +130,14 @@ export function HomePage() {
             icon={<CalendarDays size={18} />}
             className="hero-panel"
             action={
-              <button type="button" className="link-btn" onClick={() => navigate('elections')}>
-                All elections <ArrowRight size={14} aria-hidden="true" />
-              </button>
+              <>
+                <button type="button" className="link-btn" onClick={() => navigate('elections')}>
+                  All elections <ArrowRight size={14} aria-hidden="true" />
+                </button>
+                <button type="button" className="icon-btn hero-expand" onClick={() => setSpotlight(true)} aria-label="Open quick view">
+                  <Maximize2 size={15} />
+                </button>
+              </>
             }
           >
             {live.length === 0 ? (
@@ -115,7 +145,15 @@ export function HomePage() {
             ) : (
               <ul className="choice-list">
                 {live.map((election) => (
-                  <li key={election.id}>
+                  <li key={election.id} className={electionState(election).status === 'open' ? 'row-link' : undefined}>
+                    {electionState(election).status === 'open' && (
+                      <button
+                        type="button"
+                        className="row-hit"
+                        onClick={() => navigate('ballot', election.id)}
+                        aria-label={`Vote in ${election.title}`}
+                      />
+                    )}
                     <div>
                       <strong>{election.title}</strong>
                       <small>

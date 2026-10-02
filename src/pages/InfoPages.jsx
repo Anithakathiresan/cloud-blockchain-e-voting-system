@@ -77,9 +77,9 @@ function serviceCopy(t, title) {
 }
 
 export function ServicesPage() {
-  const { t, navigate, goToVote, voter } = useApp()
+  const { t, navigate, goToVote, signIn, voter } = useApp()
   const services = [
-    ...serviceTiles(t, { navigate, goToVote }).map((service) => ({ ...service, copy: serviceCopy(t, service.title) })),
+    ...serviceTiles(t, { navigate, goToVote, signIn }).map((service) => ({ ...service, copy: serviceCopy(t, service.title) })),
     {
       icon: <Fingerprint size={20} />,
       title: t.acknowledgement,

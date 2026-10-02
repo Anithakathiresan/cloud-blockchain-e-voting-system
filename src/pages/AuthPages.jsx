@@ -140,7 +140,7 @@ export function LoginPage({ notice }) {
 }
 
 export function RegisterPage() {
-  const { t, navigate, register } = useApp()
+  const { t, navigate, register, signIn } = useApp()
   const [form, setForm] = useState({
     name: '',
     voterId: '',
@@ -247,7 +247,7 @@ export function RegisterPage() {
 
         <p className="auth-switch">
           {t.haveAccount}{' '}
-          <button type="button" className="link-btn strong" onClick={() => navigate('login')}>
+          <button type="button" className="link-btn strong" onClick={signIn}>
             {t.loginLink}
           </button>
         </p>

@@ -5,17 +5,24 @@ import {
   ArrowLeft,
   ChevronDown,
   Compass,
+  Database,
+  GraduationCap,
+  IdCard,
+  Languages,
   LifeBuoy,
   Lock,
   Mail,
   Megaphone,
   Moon,
+  Palette,
   Phone,
   Plus,
   RotateCcw,
   Send,
+  ShieldCheck,
   Sun,
   Trash2,
+  UserRound,
 } from 'lucide-react'
 import { useApp } from '../context'
 import { academicLine } from '../college'
@@ -163,57 +170,80 @@ export function SettingsPage() {
   const [resetting, setResetting] = useState(false)
 
   return (
-    <div className="page-stack narrow">
-      <Card title={t.uiAppearance} subtitle="Light is the default. Your choice is remembered on this device.">
-        <div className="segmented" role="radiogroup" aria-label={t.uiAppearance}>
-          {[
-            { id: 'light', label: t.light, icon: <Sun size={16} aria-hidden="true" /> },
-            { id: 'dark', label: t.dark, icon: <Moon size={16} aria-hidden="true" /> },
-          ].map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              role="radio"
-              aria-checked={theme === option.id}
-              className={`segment ${theme === option.id ? 'active' : ''}`}
-              onClick={() => setTheme(option.id)}
-            >
-              {option.icon} {option.label}
-            </button>
-          ))}
-        </div>
-      </Card>
+    <div className="page-stack settings-page">
+      <div className="settings-grid">
+        <Card
+          className="ballot-board settings-card"
+          icon={<Palette size={18} />}
+          tone="violet"
+          title={t.uiAppearance}
+          subtitle="Light is the default. Your choice is remembered on this device."
+        >
+          <div className="segmented settings-segmented" role="radiogroup" aria-label={t.uiAppearance}>
+            {[
+              { id: 'light', label: t.light, icon: <Sun size={16} aria-hidden="true" /> },
+              { id: 'dark', label: t.dark, icon: <Moon size={16} aria-hidden="true" /> },
+            ].map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                role="radio"
+                aria-checked={theme === option.id}
+                className={`segment ${theme === option.id ? 'active' : ''}`}
+                onClick={() => setTheme(option.id)}
+              >
+                {option.icon} {option.label}
+              </button>
+            ))}
+          </div>
+        </Card>
 
-      <Card title={t.uiLanguage} subtitle={t.settingsLanguageNote}>
-        <Field label={t.uiLanguage}>
-          {(id) => (
-            <select id={id} className="input" value={language} onChange={(event) => setLanguage(event.target.value)}>
-              {languages.map((item) => (
-                <option key={item.code} value={item.code}>
-                  {item.label} ({item.subLabel})
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
-      </Card>
+        <Card
+          className="ballot-board settings-card"
+          icon={<Languages size={18} />}
+          tone="blue"
+          title={t.uiLanguage}
+          subtitle={t.settingsLanguageNote}
+        >
+          <Field label={t.uiLanguage}>
+            {(id) => (
+              <select id={id} className="input" value={language} onChange={(event) => setLanguage(event.target.value)}>
+                {languages.map((item) => (
+                  <option key={item.code} value={item.code}>
+                    {item.label} ({item.subLabel})
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+        </Card>
+      </div>
 
-      <Card title="Account">
+      <Card className="ballot-board settings-card" icon={<UserRound size={18} />} tone="green" title="Account">
         <KeyValue
+          columns={isAdmin ? 3 : 4}
           items={[
-            { label: t.colName, value: voter.name },
-            { label: isAdmin ? 'Username' : 'Register number', value: voter.voterId, mono: true },
-            { label: 'Role', value: isAdmin ? t.uiAdmin : t.uiStudent },
-            ...(isAdmin ? [] : [{ label: 'Department & year', value: academicLine(voter.department, voter.year) || '—' }]),
+            { label: t.colName, value: voter.name, icon: <UserRound size={13} /> },
+            { label: isAdmin ? 'Username' : 'Register number', value: voter.voterId, mono: true, icon: <IdCard size={13} /> },
+            { label: 'Role', value: isAdmin ? t.uiAdmin : t.uiStudent, icon: <ShieldCheck size={13} /> },
+            ...(isAdmin
+              ? []
+              : [{ label: 'Department & year', value: academicLine(voter.department, voter.year) || '—', icon: <GraduationCap size={13} /> }]),
           ]}
         />
         {!isAdmin && (
-          <p className="muted small">To correct your department or year, contact the election office.</p>
+          <p className="muted small settings-note">To correct your department or year, contact the election office.</p>
         )}
       </Card>
 
       {isAdmin && (
-        <Card title="Demo data" subtitle="Everything is stored in this browser.">
+        <Card
+          className="ballot-board settings-card"
+          icon={<Database size={18} />}
+          tone="rose"
+          title="Demo data"
+          subtitle="Everything is stored in this browser."
+        >
           <Alert tone="warning">
             Resetting clears every ballot on the ledger, all registrations and all election changes, then restores the
             sample data. This cannot be undone.

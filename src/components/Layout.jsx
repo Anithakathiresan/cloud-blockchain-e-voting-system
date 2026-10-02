@@ -564,7 +564,7 @@ function LanguageMenu() {
 }
 
 export function PublicLayout({ children, drawerSections, back }) {
-  const { t, route, navigate, voter } = useApp()
+  const { t, route, navigate, voter, signIn } = useApp()
   const [drawer, setDrawer] = useState(false)
 
   useEffect(() => {
@@ -626,7 +626,7 @@ export function PublicLayout({ children, drawerSections, back }) {
                 {t.navDashboard}
               </button>
             ) : (
-              <button type="button" className="btn btn-primary btn-sm hide-xs" onClick={() => navigate('login')}>
+              <button type="button" className="btn btn-primary btn-sm hide-xs" onClick={signIn}>
                 {t.signIn}
               </button>
             )}
@@ -695,7 +695,7 @@ export function PublicLayout({ children, drawerSections, back }) {
             </button>
           ) : (
             <>
-              <button type="button" className="btn btn-primary btn-block" onClick={() => navigate('login')}>
+              <button type="button" className="btn btn-primary btn-block" onClick={signIn}>
                 {t.signIn}
               </button>
               <button type="button" className="btn btn-secondary btn-block" onClick={() => navigate('register')}>

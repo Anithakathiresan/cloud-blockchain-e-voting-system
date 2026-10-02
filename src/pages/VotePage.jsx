@@ -131,7 +131,7 @@ function BallotChooser() {
 
 // ------------------------------------------------------- selections ---
 
-function SingleChoice({ position, field, picks, onChange }) {
+export function SingleChoice({ position, field, picks, onChange }) {
   return (
     <div className="ballot-options" role="radiogroup" aria-label={position.title}>
       {field.map((entry) => {
@@ -158,7 +158,7 @@ function SingleChoice({ position, field, picks, onChange }) {
   )
 }
 
-function MultipleChoice({ position, field, picks, onChange }) {
+export function MultipleChoice({ position, field, picks, onChange }) {
   const max = position.seats || 1
   const toggle = (candidateId) =>
     onChange(picks.includes(candidateId) ? picks.filter((idValue) => idValue !== candidateId) : [...picks, candidateId])
@@ -188,7 +188,7 @@ function MultipleChoice({ position, field, picks, onChange }) {
   )
 }
 
-function RankedChoice({ position, field, picks, onChange }) {
+export function RankedChoice({ position, field, picks, onChange }) {
   const byId = Object.fromEntries(field.map((entry) => [entry.id, entry]))
   const unranked = field.filter((entry) => !picks.includes(entry.id))
   const move = (index, delta) => {
