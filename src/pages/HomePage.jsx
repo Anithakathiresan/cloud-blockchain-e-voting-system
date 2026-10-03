@@ -1,7 +1,7 @@
 // Public landing page: what is open now, the student services, the voter
 // roll lookup, notices and the ledger status.
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   AlertCircle,
   ArrowRight,
@@ -50,28 +50,8 @@ export function HomePage() {
     .slice(0, 4)
   const ballots = chain.filter((block) => block.type !== 'genesis').length
   const [titleLead, titleAccent] = splitTitle(t.heroTitle)
+  // The quick view opens only from the hero panel's expand button.
   const [spotlight, setSpotlight] = useState(false)
-
-  // The quick view opens by itself once per browser session; the hero panel
-  // button brings it back.
-  useEffect(() => {
-    let seen = false
-    try {
-      seen = sessionStorage.getItem('spotlight-seen') === '1'
-    } catch {
-      // Storage blocked: still show it, just without remembering.
-    }
-    if (seen) return
-    const timer = setTimeout(() => {
-      setSpotlight(true)
-      try {
-        sessionStorage.setItem('spotlight-seen', '1')
-      } catch {
-        // See above.
-      }
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [])
 
   const figures = [
     { value: elections.filter((election) => election.published).length, label: t.uiElections },
