@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import {
   AlertCircle,
   BarChart3,
@@ -21,6 +22,8 @@ import {
 import { translations } from './translations'
 import { siteText } from './siteText'
 import { uiText } from './uiText'
+import { dashText } from './dashText'
+import { setUiLanguage } from './locale'
 import { AppContext } from './context'
 import { ADMIN_PAGES, PUBLIC_PAGES, SITE_PAGES, STUDENT_PAGES, hashFor, parseHash } from './router'
 import { DEPARTMENTS, departmentLabel, yearLabel } from './college'
@@ -46,6 +49,7 @@ import {
   verifyChain,
 } from './chain'
 import {
+  REGISTRY_KEY,
   addNotice,
   demoBallots,
   loadRegistry,
@@ -59,15 +63,24 @@ import {
   setCommitteeHolder,
   upsertCandidate,
 } from './store'
-import { electionStatus, isEligible, resultsVisible, tallyElection, validateSelections } from './elections'
+import {
+  electionStatus,
+  isEligible,
+  nextScheduleChange,
+  resultsVisible,
+  tallyElection,
+  validateSelections,
+} from './elections'
 import { ConsoleLayout, PublicLayout } from './components/Layout'
 import { ErrorBoundary } from './components/ui'
+import { SignInIntro } from './components/SignInIntro'
 import { CheckDetails, HomePage } from './pages/HomePage'
 import { LoginPage, RegisterPage } from './pages/AuthPages'
 import { AdminDashboard, ProfilePage, StudentDashboard } from './pages/Dashboard'
 import { ElectionDetailPage, ElectionsPage } from './pages/ElectionPages'
 import { CandidateProfilePage, CandidatesPage } from './pages/CandidatePages'
 import { ConfirmationPage, VotePage } from './pages/VotePage'
+import { BallotPage } from './pages/BallotPage'
 import { ResultsPage } from './pages/ResultsPage'
 import { LedgerPage, ReceiptPage, ReceiptsPage } from './pages/ReceiptPages'
 import { HelpPage, NotFoundPage, NoticesPage, RestrictedPage, SettingsPage } from './pages/SystemPages'
@@ -134,12 +147,28 @@ function initialRoute(signedIn) {
   return { page, id: null }
 }
 
+const routeKey = (entry) => `${entry.page}/${entry.id ?? ''}`
+
+// Page changes run through the browser's View Transitions API, so the old page
+// fades out and the new one rises in. Browsers without it, and users who ask
+// for reduced motion, get the plain instant swap.
+function withPageTransition(update) {
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  if (!document.startViewTransition || reduce) {
+    update()
+    return
+  }
+  document.startViewTransition(() => flushSync(update))
+}
+
 function App() {
   const [language, setLanguage] = useState(() => readStorage(LANG_KEY) || 'en')
   const [theme, setTheme] = useState(() => (readStorage(THEME_KEY) === 'dark' ? 'dark' : 'light'))
   const [voters, setVoters] = useState(() => getVoterDb())
   const [voter, setVoter] = useState(() => loadSession())
   const [route, setRoute] = useState(() => initialRoute(Boolean(loadSession())))
+  // Pages visited this session, so Back returns to where the user came from.
+  const [trail, setTrail] = useState(() => [parseHash()])
   const [registry, setRegistry] = useState(() => loadRegistry())
   const [chain, setChain] = useState(() => loadChain())
   const [ledger, setLedger] = useState(() => ({ status: 'checking', blocks: loadChain().length, brokenAt: null }))
@@ -149,33 +178,50 @@ function App() {
   const [ballotDrafts, setBallotDrafts] = useState({})
   const [now, setNow] = useState(() => Date.now())
   const [toast, setToast] = useState(null)
+  // The page a Sign in click came from, while the intro scene plays over it.
+  const [signInFrom, setSignInFrom] = useState(null)
   const toastTimer = useRef(null)
 
   // English is the fallback for any key a language does not define.
-  const t = useMemo(
-    () => ({
+  const t = useMemo(() => {
+    // Dates, relative times and status labels read the language from here.
+    setUiLanguage(language)
+    return {
       ...translations.en,
       ...siteText.en,
       ...uiText.en,
+      ...dashText.en,
       ...(translations[language] || {}),
       ...(siteText[language] || {}),
       ...(uiText[language] || {}),
-    }),
-    [language],
-  )
+      ...(dashText[language] || {}),
+    }
+  }, [language])
 
   const isAdmin = voter?.role === 'admin'
 
   // ------------------------------------------------------------ effects ---
 
+  const moveTo = useCallback((next) => {
+    setRoute(next)
+    setTrail((stack) => {
+      const key = routeKey(next)
+      // Browser back to the page before this one: step the trail back too.
+      if (stack.length > 1 && routeKey(stack[stack.length - 2]) === key) return stack.slice(0, -1)
+      if (stack.length && routeKey(stack[stack.length - 1]) === key) return stack
+      return [...stack, next]
+    })
+  }, [])
+
   useEffect(() => {
-    const onHash = () => {
-      setRoute(parseHash())
-      window.scrollTo({ top: 0 })
-    }
+    const onHash = () =>
+      withPageTransition(() => {
+        moveTo(parseHash())
+        window.scrollTo({ top: 0 })
+      })
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
-  }, [])
+  }, [moveTo])
 
   useEffect(() => {
     let cancelled = false
@@ -206,11 +252,38 @@ function App() {
     saveRegistry(registry)
   }, [registry])
 
+  // Pick up notices and elections saved from another tab (an officer posting
+  // while a student is signed in elsewhere). Saving the same text back does
+  // not fire another storage event, so the tabs do not ping-pong.
+  useEffect(() => {
+    const onStorage = (event) => {
+      if (event.key !== REGISTRY_KEY || !event.newValue) return
+      try {
+        const next = JSON.parse(event.newValue)
+        if (Array.isArray(next?.elections)) setRegistry(next)
+      } catch {
+        // A half-written or foreign value: keep what this tab has.
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
   // Statuses move from upcoming → open → closed with the clock.
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 30000)
     return () => clearInterval(timer)
   }, [])
+
+  // …and flip at the exact scheduled second rather than on the next tick.
+  useEffect(() => {
+    const next = nextScheduleChange(registry.elections, now)
+    if (next === null) return undefined
+    // setTimeout caps at ~24.8 days; the 30 s tick re-arms it later.
+    const wait = Math.min(next - Date.now() + 50, 2 ** 31 - 1)
+    const timer = setTimeout(() => setNow(Date.now()), Math.max(wait, 0))
+    return () => clearTimeout(timer)
+  }, [registry.elections, now])
 
   // Find the signed-in student's own ballot in every election.
   const voterId = voter?.voterId
@@ -266,17 +339,25 @@ function App() {
   const navigate = useCallback((page, id = null) => {
     const hash = hashFor(page, id)
     if (window.location.hash === hash) {
-      setRoute({ page, id })
-      window.scrollTo({ top: 0 })
+      withPageTransition(() => {
+        moveTo({ page, id })
+        window.scrollTo({ top: 0 })
+      })
     } else {
       window.location.hash = hash
     }
-  }, [])
+  }, [moveTo])
 
   // Signed-in users skip the sign-in and registration screens.
   useEffect(() => {
     if (voter && (route.page === 'login' || route.page === 'register')) navigate('dashboard')
   }, [voter, route.page, navigate])
+
+  // Once the page changes, the sign-in scene is spent; coming back to the page
+  // it started from must not replay it.
+  useEffect(() => {
+    setSignInFrom((from) => (from && from !== `${route.page}/${route.id}` ? null : from))
+  }, [route.page, route.id])
 
   const candidates = useMemo(
     () =>
@@ -337,6 +418,7 @@ function App() {
     saveSession(record.voterId)
     setVoters(getVoterDb())
     setBallotDrafts({})
+    setTrail([])
     navigate('dashboard')
     showToast(`${t.signedInAs} ${record.name}`)
   }
@@ -346,6 +428,7 @@ function App() {
     setVoters(updated)
     setVoter(record)
     saveSession(record.voterId)
+    setTrail([])
     navigate('dashboard')
     showToast(t.registerSuccess)
   }
@@ -354,6 +437,7 @@ function App() {
     setVoter(null)
     saveSession(null)
     setBallotDrafts({})
+    setTrail([])
     navigate('home')
   }
 
@@ -412,6 +496,17 @@ function App() {
   }
 
   const goToVote = () => navigate(voter ? 'vote' : 'login')
+
+  // Sign in buttons play the short ballot-unit scene, then open the login page.
+  // Reduced motion, or already being on the login page, goes straight there.
+  const signIn = () => {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduce || route.page === 'login') {
+      navigate('login')
+      return
+    }
+    setSignInFrom(`${route.page}/${route.id}`)
+  }
 
   // The voter card is the student's own roll entry, written out as text.
   const downloadCard = () => {
@@ -545,6 +640,7 @@ function App() {
       setBallotDrafts({})
       setChain(await prepareLedger())
       setVoters(getVoterDb())
+      setTrail([])
       navigate('home')
       showToast('Demo data restored.')
     },
@@ -586,6 +682,7 @@ function App() {
     pickCandidate,
     castBallot,
     goToVote,
+    signIn,
     downloadCard,
     showToast,
     admin,
@@ -633,6 +730,14 @@ function App() {
       crumbs: [{ label: t.uiCastVote, page: 'vote' }, { label: t.uiStepReceipt }],
       element: <ConfirmationPage id={id} />,
     }),
+    ballot: () => {
+      const election = findElection()
+      return {
+        title: t.uiCastVote,
+        crumbs: [{ label: t.navHome, page: 'home' }, { label: election?.published ? election.title : 'Ballot' }],
+        element: <BallotPage key={id} id={id} />,
+      }
+    },
     results: () => ({ title: t.uiResults, crumbs: [{ label: t.uiResults }], element: <ResultsPage id={id} /> }),
     receipts: () => ({ title: t.uiMyReceipts, crumbs: [{ label: t.uiMyReceipts }], element: <ReceiptsPage /> }),
     receipt: () => ({
@@ -733,9 +838,61 @@ function App() {
     view = { title: 'Page not found', crumbs: [{ label: 'Not found' }], element: <NotFoundPage /> }
   }
 
+  // ------------------------------------------------------------ back bar ---
+
+  // Back goes to the previous page in the trail, or else to the page's parent.
+  const currentKey = routeKey(route)
+  const reachable = (entry) =>
+    routeKey(entry) !== currentKey && !(voter && (entry.page === 'login' || entry.page === 'register'))
+  const previousIndex = trail.findLastIndex(reachable)
+  let backTarget = previousIndex >= 0 ? trail[previousIndex] : null
+  if (!backTarget) {
+    const parent = view.crumbs?.slice(0, -1).findLast((crumb) => crumb.page)
+    if (parent) backTarget = { page: parent.page, id: parent.id ?? null }
+    else if (!view.site && page !== 'dashboard') backTarget = { page: 'dashboard', id: null }
+    else if (page === 'register') backTarget = { page: 'login', id: null }
+    else if (page !== 'home') backTarget = { page: 'home', id: null }
+  }
+
+  const siteLabels = {
+    home: t.navHome,
+    about: t.navAboutSite,
+    services: t.navServicesSite,
+    contact: t.navContact,
+    electionInfo: t.menuElectionInfo,
+    login: t.loginTitle,
+    register: t.registerLink,
+    check: t.checkPageTitle,
+  }
+  const labelFor = ({ page: target, id: targetId }) => {
+    if (siteLabels[target]) return siteLabels[target]
+    if (target === 'election' || target === 'election-edit') {
+      return registry.elections.find((entry) => entry.id === targetId)?.title || t.uiElections
+    }
+    if (target === 'candidate') return candidates.find((entry) => entry.id === targetId)?.name || t.uiCandidates
+    if (target === 'department') return DEPARTMENTS.find((entry) => entry.id === targetId)?.short || t.uiDepartments
+    return views[target]?.().title || t.navHome
+  }
+
+  const back = backTarget && {
+    label: labelFor(backTarget),
+    go: () => {
+      if (previousIndex >= 0) setTrail((stack) => stack.slice(0, previousIndex + 1))
+      navigate(backTarget.page, backTarget.id)
+    },
+  }
+
   useEffect(() => {
     document.title = view.title ? `${view.title} · College E-Voting` : 'College E-Voting System'
   })
+
+  // Home and every signed-in console page scroll without a visible scroll bar.
+  const consolePage = Boolean(voter) && !view.site
+  useEffect(() => {
+    const hide = route.page === 'home' || consolePage
+    document.documentElement.classList.toggle('no-scrollbar', hide)
+    return () => document.documentElement.classList.remove('no-scrollbar')
+  }, [route.page, consolePage])
 
   const drawerSections = [
     {
@@ -773,11 +930,11 @@ function App() {
   return (
     <AppContext.Provider value={context}>
       {voter && !view.site ? (
-        <ConsoleLayout title={view.title} crumbs={view.crumbs}>
+        <ConsoleLayout title={view.title} crumbs={view.crumbs} back={back}>
           {body}
         </ConsoleLayout>
       ) : (
-        <PublicLayout drawerSections={drawerSections}>
+        <PublicLayout drawerSections={drawerSections} back={back}>
           {view.site ? (
             body
           ) : (
@@ -788,6 +945,10 @@ function App() {
           )}
         </PublicLayout>
       )}
+
+      {/* Shown only while still on the page it started from, so it leaves in the
+          same render as the page change and Back mid-scene just drops it. */}
+      {signInFrom === `${page}/${id}` && <SignInIntro onDone={() => navigate('login')} />}
 
       {toast && (
         <div className={`toast toast-${toast.tone}`} role={toast.tone === 'error' ? 'alert' : 'status'}>

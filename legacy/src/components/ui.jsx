@@ -20,6 +20,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { STATUS_META } from '../elections'
+import { statusLabel } from '../locale'
 
 // Colour families shared by stat cards, card icons, avatars and charts.
 export const TONES = ['blue', 'green', 'violet', 'amber', 'teal', 'rose', 'sky']
@@ -82,7 +83,7 @@ export function StatusBadge({ status }) {
   }
   return (
     <Badge tone={meta.tone} icon={icons[status]}>
-      {meta.label}
+      {statusLabel(status) || meta.label}
     </Badge>
   )
 }

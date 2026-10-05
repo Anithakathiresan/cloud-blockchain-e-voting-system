@@ -5,17 +5,24 @@ import {
   ArrowLeft,
   ChevronDown,
   Compass,
+  Database,
+  GraduationCap,
+  IdCard,
+  Languages,
   LifeBuoy,
   Lock,
   Mail,
   Megaphone,
   Moon,
+  Palette,
   Phone,
   Plus,
   RotateCcw,
   Send,
+  ShieldCheck,
   Sun,
   Trash2,
+  UserRound,
 } from 'lucide-react'
 import { useApp } from '../context'
 import { academicLine } from '../college'
@@ -42,7 +49,7 @@ export function NoticesPage() {
   }
 
   return (
-    <div className="page-stack narrow">
+    <div className="page-stack">
       <PageIntro
         actions={
           isAdmin &&
@@ -98,7 +105,14 @@ export function NoticesPage() {
           <EmptyState icon={<Megaphone size={22} />} title="No notices yet" copy="Announcements from the election committee will appear here." />
         </Card>
       ) : (
-        <Card flush>
+        <Card
+          flush
+          className="notice-board"
+          title="Notice Board"
+          subtitle={`${notices.length} ${notices.length === 1 ? 'notice' : 'notices'} from the election committee`}
+          icon={<Megaphone size={18} />}
+          tone="amber"
+        >
           <ul className="notice-feed">
             {notices.map((notice) => (
               <li key={notice.id}>
@@ -156,57 +170,80 @@ export function SettingsPage() {
   const [resetting, setResetting] = useState(false)
 
   return (
-    <div className="page-stack narrow">
-      <Card title={t.uiAppearance} subtitle="Light is the default. Your choice is remembered on this device.">
-        <div className="segmented" role="radiogroup" aria-label={t.uiAppearance}>
-          {[
-            { id: 'light', label: t.light, icon: <Sun size={16} aria-hidden="true" /> },
-            { id: 'dark', label: t.dark, icon: <Moon size={16} aria-hidden="true" /> },
-          ].map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              role="radio"
-              aria-checked={theme === option.id}
-              className={`segment ${theme === option.id ? 'active' : ''}`}
-              onClick={() => setTheme(option.id)}
-            >
-              {option.icon} {option.label}
-            </button>
-          ))}
-        </div>
-      </Card>
+    <div className="page-stack settings-page">
+      <div className="settings-grid">
+        <Card
+          className="ballot-board settings-card"
+          icon={<Palette size={18} />}
+          tone="violet"
+          title={t.uiAppearance}
+          subtitle="Light is the default. Your choice is remembered on this device."
+        >
+          <div className="segmented settings-segmented" role="radiogroup" aria-label={t.uiAppearance}>
+            {[
+              { id: 'light', label: t.light, icon: <Sun size={16} aria-hidden="true" /> },
+              { id: 'dark', label: t.dark, icon: <Moon size={16} aria-hidden="true" /> },
+            ].map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                role="radio"
+                aria-checked={theme === option.id}
+                className={`segment ${theme === option.id ? 'active' : ''}`}
+                onClick={() => setTheme(option.id)}
+              >
+                {option.icon} {option.label}
+              </button>
+            ))}
+          </div>
+        </Card>
 
-      <Card title={t.uiLanguage} subtitle="Navigation and the ballot are translated; some pages remain in English.">
-        <Field label={t.uiLanguage}>
-          {(id) => (
-            <select id={id} className="input" value={language} onChange={(event) => setLanguage(event.target.value)}>
-              {languages.map((item) => (
-                <option key={item.code} value={item.code}>
-                  {item.label} ({item.subLabel})
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
-      </Card>
+        <Card
+          className="ballot-board settings-card"
+          icon={<Languages size={18} />}
+          tone="blue"
+          title={t.uiLanguage}
+          subtitle={t.settingsLanguageNote}
+        >
+          <Field label={t.uiLanguage}>
+            {(id) => (
+              <select id={id} className="input" value={language} onChange={(event) => setLanguage(event.target.value)}>
+                {languages.map((item) => (
+                  <option key={item.code} value={item.code}>
+                    {item.label} ({item.subLabel})
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+        </Card>
+      </div>
 
-      <Card title="Account">
+      <Card className="ballot-board settings-card" icon={<UserRound size={18} />} tone="green" title="Account">
         <KeyValue
+          columns={isAdmin ? 3 : 4}
           items={[
-            { label: t.colName, value: voter.name },
-            { label: isAdmin ? 'Username' : 'Register number', value: voter.voterId, mono: true },
-            { label: 'Role', value: isAdmin ? t.uiAdmin : t.uiStudent },
-            ...(isAdmin ? [] : [{ label: 'Department & year', value: academicLine(voter.department, voter.year) || '—' }]),
+            { label: t.colName, value: voter.name, icon: <UserRound size={13} /> },
+            { label: isAdmin ? 'Username' : 'Register number', value: voter.voterId, mono: true, icon: <IdCard size={13} /> },
+            { label: 'Role', value: isAdmin ? t.uiAdmin : t.uiStudent, icon: <ShieldCheck size={13} /> },
+            ...(isAdmin
+              ? []
+              : [{ label: 'Department & year', value: academicLine(voter.department, voter.year) || '—', icon: <GraduationCap size={13} /> }]),
           ]}
         />
         {!isAdmin && (
-          <p className="muted small">To correct your department or year, contact the election office.</p>
+          <p className="muted small settings-note">To correct your department or year, contact the election office.</p>
         )}
       </Card>
 
       {isAdmin && (
-        <Card title="Demo data" subtitle="Everything is stored in this browser.">
+        <Card
+          className="ballot-board settings-card"
+          icon={<Database size={18} />}
+          tone="rose"
+          title="Demo data"
+          subtitle="Everything is stored in this browser."
+        >
           <Alert tone="warning">
             Resetting clears every ballot on the ledger, all registrations and all election changes, then restores the
             sample data. This cannot be undone.
@@ -268,31 +305,41 @@ const FAQ = [
 export function HelpPage() {
   const { navigate } = useApp()
   return (
-    <div className="page-stack narrow">
-      <Card title="Frequently asked questions" icon={<LifeBuoy size={18} />}>
-        <div className="faq">
-          {FAQ.map((item) => (
-            <details key={item.q} className="faq-item">
-              <summary>
-                <span>{item.q}</span>
-                <ChevronDown size={18} aria-hidden="true" />
-              </summary>
-              <p>{item.a}</p>
-            </details>
-          ))}
+    <div className="page-stack">
+      <Card
+        flush
+        className="ballot-board"
+        title="Frequently asked questions"
+        subtitle={`${FAQ.length} common questions about voting`}
+        icon={<LifeBuoy size={18} />}
+      >
+        <div className="ballot-board-body">
+          <div className="faq">
+            {FAQ.map((item) => (
+              <details key={item.q} className="faq-item">
+                <summary>
+                  <span>{item.q}</span>
+                  <ChevronDown size={18} aria-hidden="true" />
+                </summary>
+                <p>{item.a}</p>
+              </details>
+            ))}
+          </div>
         </div>
       </Card>
-      <Card title="Still need help?">
-        <KeyValue
-          items={[
-            { icon: <Phone size={15} />, label: 'Election helpdesk', value: '+91 98765 43210' },
-            { icon: <Mail size={15} />, label: 'Email', value: 'support@e-vote.in' },
-          ]}
-        />
-        <div className="form-actions">
-          <button type="button" className="btn btn-secondary" onClick={() => navigate('contact')}>
-            <Send size={16} aria-hidden="true" /> Send a message
-          </button>
+      <Card flush className="ballot-board" title="Still need help?" icon={<Phone size={18} />}>
+        <div className="ballot-board-body">
+          <KeyValue
+            items={[
+              { icon: <Phone size={15} />, label: 'Election helpdesk', value: '+91 98765 43210' },
+              { icon: <Mail size={15} />, label: 'Email', value: 'support@e-vote.in' },
+            ]}
+          />
+          <div className="form-actions">
+            <button type="button" className="btn btn-secondary" onClick={() => navigate('contact')}>
+              <Send size={16} aria-hidden="true" /> Send a message
+            </button>
+          </div>
         </div>
       </Card>
     </div>

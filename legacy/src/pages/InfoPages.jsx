@@ -19,7 +19,8 @@ import {
 import { useApp } from '../context'
 import { compactHash } from '../chain'
 import { formatNumber, formatPeriod, scopeLabel } from '../elections'
-import { Card, EmptyState, Field, KeyValue, StatusBadge } from '../components/ui'
+import { Card, EmptyState, Field, StatusBadge } from '../components/ui'
+import { AuthBackdrop } from '../components/AuthBackdrop'
 import { serviceTiles } from './HomePage'
 
 export function AboutPage() {
@@ -32,7 +33,8 @@ export function AboutPage() {
   ]
 
   return (
-    <div className="page-stack">
+    <div className="page-stack about-page">
+      <AuthBackdrop />
       <div className="section-head">
         <h1>{t.aboutTitle}</h1>
         <p>{t.aboutSubtitle}</p>
@@ -40,7 +42,7 @@ export function AboutPage() {
       <Card>
         <p className="prose">{t.aboutLead}</p>
       </Card>
-      <div className="card-grid card-grid-2">
+      <div className="card-grid about-points">
         {points.map((point) => (
           <Card key={point.title} className="info-card">
             <span className="service-icon" aria-hidden="true">
@@ -75,9 +77,9 @@ function serviceCopy(t, title) {
 }
 
 export function ServicesPage() {
-  const { t, navigate, goToVote, voter } = useApp()
+  const { t, navigate, goToVote, signIn, voter } = useApp()
   const services = [
-    ...serviceTiles(t, { navigate, goToVote }).map((service) => ({ ...service, copy: serviceCopy(t, service.title) })),
+    ...serviceTiles(t, { navigate, goToVote, signIn }).map((service) => ({ ...service, copy: serviceCopy(t, service.title) })),
     {
       icon: <Fingerprint size={20} />,
       title: t.acknowledgement,
@@ -89,6 +91,7 @@ export function ServicesPage() {
 
   return (
     <div className="page-stack">
+      <AuthBackdrop />
       <div className="section-head">
         <h1>{t.servicesHeading}</h1>
         <p>{t.servicesSubheading}</p>
@@ -131,23 +134,33 @@ export function ContactPage() {
 
   return (
     <div className="page-stack">
+      <AuthBackdrop />
       <div className="section-head">
         <h1>{t.contactTitle}</h1>
         <p>{t.contactSubtitle}</p>
       </div>
-      <div className="grid-2">
-        <Card title="Election helpdesk">
-          <KeyValue
-            columns={1}
-            items={[
-              { icon: <Phone size={15} />, label: t.contactHelpline, value: '+91 98765 43210' },
-              { icon: <Mail size={15} />, label: t.contactEmail, value: 'support@e-vote.in' },
-              { icon: <MapPin size={15} />, label: t.contactAddress, value: t.contactAddressValue },
-              { icon: <Clock3 size={15} />, label: t.contactHours, value: t.contactHoursValue },
-            ]}
-          />
+      <div className="grid-2 stretch contact-grid">
+        <Card title="Election helpdesk" className="contact-card">
+          <ul className="contact-list">
+            {[
+              { icon: <Phone size={18} />, label: t.contactHelpline, value: '+91 98765 43210' },
+              { icon: <Mail size={18} />, label: t.contactEmail, value: 'support@e-vote.in' },
+              { icon: <MapPin size={18} />, label: t.contactAddress, value: t.contactAddressValue },
+              { icon: <Clock3 size={18} />, label: t.contactHours, value: t.contactHoursValue },
+            ].map((item) => (
+              <li key={item.label} className="contact-item">
+                <span className="contact-icon" aria-hidden="true">
+                  {item.icon}
+                </span>
+                <div>
+                  <small>{item.label}</small>
+                  <strong>{item.value}</strong>
+                </div>
+              </li>
+            ))}
+          </ul>
         </Card>
-        <Card title={t.contactFormTitle}>
+        <Card title={t.contactFormTitle} className="contact-card">
           <form className="form-stack" onSubmit={submit} noValidate>
             <Field label={t.yourName} required error={errors.name}>
               {(id) => <input id={id} className="input" value={form.name} onChange={update('name')} autoComplete="name" />}

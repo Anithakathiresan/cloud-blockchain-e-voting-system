@@ -1,8 +1,9 @@
 // The two frames every page renders in: the signed-in console (white
 // sidebar + compact header) and the public site (top header + footer).
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  ArrowLeft,
   BarChart3,
   Bell,
   Building2,
@@ -34,7 +35,9 @@ import {
 import { useApp } from '../context'
 import { academicLine } from '../college'
 import { relativeTime } from '../elections'
+import { fill } from '../locale'
 import { Avatar } from './ui'
+import { AuthBackdrop } from './AuthBackdrop'
 
 // Detail pages highlight the list they belong to.
 const NAV_PARENT = {
@@ -376,7 +379,78 @@ function Breadcrumb({ crumbs }) {
   )
 }
 
-export function ConsoleLayout({ title, crumbs, children }) {
+// The Back box above every page's content.
+function BackBar({ back }) {
+  const { t } = useApp()
+  if (!back) return null
+  return (
+    <nav className="back-bar" aria-label={t.back}>
+      <button type="button" className="back-btn" onClick={back.go} aria-label={fill(t.backTo, { page: back.label })}>
+        <span className="back-btn-icon" aria-hidden="true">
+          <ArrowLeft size={18} />
+        </span>
+        <span className="back-btn-text">
+          <strong>{t.back}</strong>
+          <small>{back.label}</small>
+        </span>
+      </button>
+    </nav>
+  )
+}
+
+// How long the orange pulse runs after an update: two passes on each chain.
+const PULSE_MS = 10000
+
+// Decorative background behind the console pages: soft drifting glows and a
+// dot grid. An orange pulse runs across two lanes, left to right, only when a
+// notice is posted or an election changes — like a new block being sealed
+// onto the ledger.
+function ConsoleBackdrop() {
+  const { registry, electionState } = useApp()
+  const [pulse, setPulse] = useState(0)
+
+  // Everything that counts as "new information": the notices, the election
+  // records themselves, and each election's status as it opens or closes.
+  const signature = useMemo(
+    () =>
+      JSON.stringify([
+        registry.notices,
+        registry.elections,
+        registry.elections.map((election) => electionState(election).status),
+      ]),
+    [registry.notices, registry.elections, electionState],
+  )
+
+  const seen = useRef(signature)
+  useEffect(() => {
+    if (seen.current === signature) return
+    seen.current = signature
+    setPulse((count) => count + 1)
+  }, [signature])
+
+  useEffect(() => {
+    if (!pulse) return undefined
+    const timer = setTimeout(() => setPulse(0), PULSE_MS)
+    return () => clearTimeout(timer)
+  }, [pulse])
+
+  return (
+    <div className={`console-bg${pulse ? ' is-pulsing' : ''}`} aria-hidden="true">
+      <span className="console-orb orb-a" />
+      <span className="console-orb orb-b" />
+      <span className="console-orb orb-c" />
+      <span className="console-grid" />
+      <span className="console-chain chain-a">
+        {pulse > 0 && <span key={pulse} className="console-chain-pulse" />}
+      </span>
+      <span className="console-chain chain-b">
+        {pulse > 0 && <span key={pulse} className="console-chain-pulse" />}
+      </span>
+    </div>
+  )
+}
+
+export function ConsoleLayout({ title, crumbs, back, children }) {
   const { t, route, navigate } = useApp()
   const [drawer, setDrawer] = useState(false)
 
@@ -402,6 +476,8 @@ export function ConsoleLayout({ title, crumbs, children }) {
       </a>
       <Sidebar open={drawer} onClose={() => setDrawer(false)} />
       <div className="main">
+        <AuthBackdrop />
+        <ConsoleBackdrop />
         <header className="topbar">
           <button
             type="button"
@@ -417,6 +493,7 @@ export function ConsoleLayout({ title, crumbs, children }) {
             <Breadcrumb crumbs={crumbs} />
           </div>
           <div className="topbar-actions">
+            <LanguageMenu />
             <ThemeToggle />
             <NotificationsMenu />
             <button
@@ -432,6 +509,7 @@ export function ConsoleLayout({ title, crumbs, children }) {
           </div>
         </header>
         <main id="main-content" className="content" tabIndex={-1}>
+          <BackBar back={back} />
           {children}
         </main>
       </div>
@@ -485,8 +563,8 @@ function LanguageMenu() {
   )
 }
 
-export function PublicLayout({ children, drawerSections }) {
-  const { t, route, navigate, voter } = useApp()
+export function PublicLayout({ children, drawerSections, back }) {
+  const { t, route, navigate, voter, signIn } = useApp()
   const [drawer, setDrawer] = useState(false)
 
   useEffect(() => {
@@ -548,7 +626,7 @@ export function PublicLayout({ children, drawerSections }) {
                 {t.navDashboard}
               </button>
             ) : (
-              <button type="button" className="btn btn-primary btn-sm hide-xs" onClick={() => navigate('login')}>
+              <button type="button" className="btn btn-primary btn-sm hide-xs" onClick={signIn}>
                 {t.signIn}
               </button>
             )}
@@ -617,7 +695,7 @@ export function PublicLayout({ children, drawerSections }) {
             </button>
           ) : (
             <>
-              <button type="button" className="btn btn-primary btn-block" onClick={() => navigate('login')}>
+              <button type="button" className="btn btn-primary btn-block" onClick={signIn}>
                 {t.signIn}
               </button>
               <button type="button" className="btn btn-secondary btn-block" onClick={() => navigate('register')}>
@@ -629,6 +707,7 @@ export function PublicLayout({ children, drawerSections }) {
       </aside>
 
       <main id="main-content" className="site-main" tabIndex={-1}>
+        <BackBar back={back} />
         {children}
       </main>
 

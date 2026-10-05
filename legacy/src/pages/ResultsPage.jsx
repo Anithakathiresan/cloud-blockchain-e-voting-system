@@ -16,6 +16,7 @@ import {
   percentOf,
 } from '../elections'
 import { PositionResults } from '../components/election'
+import { AuthBackdrop } from '../components/AuthBackdrop'
 import { Alert, Card, EmptyState, StatCard, StatusBadge } from '../components/ui'
 import { ElectionFilters } from './ElectionPages'
 
@@ -70,7 +71,7 @@ function RunoffRounds({ result }) {
 }
 
 export function ResultsPage({ id }) {
-  const { elections, electionState, tallies, voters, committee, navigate, ledger, chain } = useApp()
+  const { elections, electionState, tallies, voters, committee, navigate, ledger, chain, voter } = useApp()
   const [department, setDepartment] = useState('')
   const [year, setYear] = useState('')
   const [positionId, setPositionId] = useState('')
@@ -88,6 +89,7 @@ export function ResultsPage({ id }) {
   if (!election) {
     return (
       <div className="page-stack">
+        {!voter && <AuthBackdrop />}
         <div className="toolbar">
           <div className="toolbar-filters">
             <ElectionFilters department={department} setDepartment={setDepartment} year={year} setYear={setYear} />
@@ -106,6 +108,8 @@ export function ResultsPage({ id }) {
 
   return (
     <div className="page-stack">
+      {/* Signed in, the console layout already draws it. */}
+      {!voter && <AuthBackdrop />}
       <div className="toolbar">
         <div className="toolbar-filters">
           <label className="select-inline wide">

@@ -135,79 +135,99 @@ export function ReceiptPage({ id }) {
   }
 
   return (
-    <div className="page-stack narrow">
-      <Card className="receipt">
-        <div className="receipt-top">
-          <span className="success-icon small" aria-hidden="true">
-            <CheckCircle2 size={24} />
-          </span>
-          <div className="grow">
-            <h2>{t.recordedSuccessfully}</h2>
-            <p className="muted">{election.title}</p>
+    <div className="page-stack">
+      <Card flush className="receipt receipt-ticket">
+        {/* Stub: the at-a-glance proof that the ballot is sealed. */}
+        <div className="receipt-stub">
+          <div className="receipt-stub-head">
+            <span className="receipt-stub-icon" aria-hidden="true">
+              <CheckCircle2 size={26} />
+            </span>
+            <Badge tone="success">Sealed</Badge>
           </div>
-          <Badge tone="success">Sealed</Badge>
+          <p className="receipt-eyebrow">Vote receipt</p>
+          <h2>{t.recordedSuccessfully}</h2>
+          <p className="receipt-election">{election.title}</p>
+
+          <dl className="receipt-stub-facts">
+            <div>
+              <dt>{t.blockConfirmation}</dt>
+              <dd className="receipt-block mono">#{receipt.index}</dd>
+            </div>
+            <div>
+              <dt>{t.recordedAt}</dt>
+              <dd>{formatDateTime(receipt.timestamp)}</dd>
+            </div>
+          </dl>
         </div>
 
-        <dl className="receipt-grid">
-          <div>
-            <dt>Receipt ID</dt>
-            <dd className="mono">{compactHash(receipt.hash)}</dd>
-          </div>
-          <div>
-            <dt>{t.blockConfirmation}</dt>
-            <dd className="mono">#{receipt.index}</dd>
-          </div>
-          <div>
-            <dt>{t.recordedAt}</dt>
-            <dd>{formatDateTime(receipt.timestamp)}</dd>
-          </div>
-          <div>
-            <dt>Voter digest</dt>
-            <dd className="mono">{shortHash(receipt.voterHash, 12)}</dd>
-          </div>
-          <div className="full">
-            <dt>{t.txRef}</dt>
-            <dd className="mono wrap">{receipt.hash}</dd>
-          </div>
-          <div className="full">
-            <dt>
-              <Link2 size={13} aria-hidden="true" /> Previous block hash
-            </dt>
-            <dd className="mono wrap">{receipt.previousHash}</dd>
-          </div>
-        </dl>
+        <div className="receipt-body">
+          <dl className="receipt-grid">
+            <div>
+              <dt>
+                <Receipt size={13} aria-hidden="true" /> Receipt ID
+              </dt>
+              <dd className="mono">{compactHash(receipt.hash)}</dd>
+            </div>
+            <div>
+              <dt>
+                <Fingerprint size={13} aria-hidden="true" /> Voter digest
+              </dt>
+              <dd className="mono">{shortHash(receipt.voterHash, 12)}</dd>
+            </div>
+            <div className="full">
+              <dt>
+                <Blocks size={13} aria-hidden="true" /> {t.txRef}
+              </dt>
+              <dd className="receipt-hash mono wrap">{receipt.hash}</dd>
+            </div>
+            <div className="full">
+              <dt>
+                <Link2 size={13} aria-hidden="true" /> Previous block hash
+              </dt>
+              <dd className="receipt-hash mono wrap">{receipt.previousHash}</dd>
+            </div>
+          </dl>
 
-        {check?.status === 'ok' && (
-          <Alert tone="success" title="Receipt verified">
-            Block #{receipt.index} is on the ledger and every block links correctly.
-          </Alert>
-        )}
-        {check?.status === 'bad' && (
-          <Alert tone="error" title="Verification failed">
-            The ledger failed verification{check.brokenAt !== null ? ` at block #${check.brokenAt}` : ''}. Contact the election office.
-          </Alert>
-        )}
+          {check?.status === 'ok' && (
+            <Alert tone="success" title="Receipt verified">
+              Block #{receipt.index} is on the ledger and every block links correctly.
+            </Alert>
+          )}
+          {check?.status === 'bad' && (
+            <Alert tone="error" title="Verification failed">
+              The ledger failed verification{check.brokenAt !== null ? ` at block #${check.brokenAt}` : ''}. Contact the election office.
+            </Alert>
+          )}
 
+<<<<<<< HEAD:legacy/src/pages/ReceiptPages.jsx
         <p className="receipt-note">
           <Fingerprint size={15} aria-hidden="true" /> Legacy prototype receipt only. The simulated localStorage ledger includes
           plaintext ballot selections; this receipt does not provide ballot secrecy or prove blockchain participation.
         </p>
+=======
+          <p className="receipt-note">
+            <Fingerprint size={15} aria-hidden="true" /> The ledger stores only a salted digest of your register number, so this
+            receipt proves you voted without revealing your choice.
+          </p>
+>>>>>>> b018fabab9b782eecff6eb0aadd2a0da503a251b:src/pages/ReceiptPages.jsx
 
-        <div className="card-foot-actions">
-          <button type="button" className="btn btn-secondary" onClick={() => navigate('receipts')}>
-            <ArrowLeft size={16} aria-hidden="true" /> {t.uiMyReceipts}
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={() => window.print()}>
-            <Printer size={16} aria-hidden="true" /> Print
-          </button>
-          <button type="button" className="btn btn-primary" onClick={verify} disabled={check?.status === 'checking'}>
-            {check?.status === 'checking' ? (
-              <Loader2 size={16} className="spin" aria-hidden="true" />
-            ) : (
-              <ShieldCheck size={16} aria-hidden="true" />
-            )}
-            Verify receipt
-          </button>
+          <div className="card-foot-actions">
+            <button type="button" className="btn btn-secondary" onClick={() => navigate('receipts')}>
+              <ArrowLeft size={16} aria-hidden="true" /> {t.uiMyReceipts}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={() => window.print()}>
+              <Printer size={16} aria-hidden="true" /> Print
+            </button>
+            <button type="button" className="btn btn-primary" onClick={verify} disabled={check?.status === 'checking'}>
+              {check?.status === 'checking' ? (
+                <Loader2 size={16} className="spin" aria-hidden="true" />
+              ) : (
+                <ShieldCheck size={16} aria-hidden="true" />
+              )}
+              Verify receipt
+            </button>
+          </div>
         </div>
       </Card>
     </div>

@@ -1,10 +1,11 @@
 // Sign-in and registration cards.
 
 import { useState } from 'react'
-import { AlertCircle, ArrowLeft, Eye, EyeOff, LogIn, ShieldCheck, UserPlus } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff, LogIn, ShieldCheck, UserPlus } from 'lucide-react'
 import { useApp } from '../context'
 import { DEPARTMENTS, YEARS } from '../college'
 import { BrandMark } from '../components/Layout'
+import { AuthBackdrop } from '../components/AuthBackdrop'
 
 function PasswordInput({ id, value, onChange, autoComplete, t }) {
   const [visible, setVisible] = useState(false)
@@ -54,12 +55,10 @@ export function LoginPage({ notice }) {
 
   return (
     <section className="auth-wrap">
-      <form className="auth-card" onSubmit={submit} noValidate>
-        <button type="button" className="link-btn back" onClick={() => navigate('home')}>
-          <ArrowLeft size={15} aria-hidden="true" /> {t.back}
-        </button>
+      <AuthBackdrop />
+      <form className="auth-card login" onSubmit={submit} noValidate>
         <div className="auth-brand">
-          <BrandMark size={40} />
+          <BrandMark size={52} />
           <div>
             <h1>{t.loginTitle}</h1>
             <p className="muted">{t.loginSubtitle}</p>
@@ -141,7 +140,7 @@ export function LoginPage({ notice }) {
 }
 
 export function RegisterPage() {
-  const { t, navigate, register } = useApp()
+  const { t, navigate, register, signIn } = useApp()
   const [form, setForm] = useState({
     name: '',
     voterId: '',
@@ -180,9 +179,6 @@ export function RegisterPage() {
   return (
     <section className="auth-wrap">
       <form className="auth-card wide" onSubmit={submit} noValidate>
-        <button type="button" className="link-btn back" onClick={() => navigate('login')}>
-          <ArrowLeft size={15} aria-hidden="true" /> {t.back}
-        </button>
         <div className="auth-brand">
           <BrandMark size={40} />
           <div>
@@ -251,7 +247,7 @@ export function RegisterPage() {
 
         <p className="auth-switch">
           {t.haveAccount}{' '}
-          <button type="button" className="link-btn strong" onClick={() => navigate('login')}>
+          <button type="button" className="link-btn strong" onClick={signIn}>
             {t.loginLink}
           </button>
         </p>
