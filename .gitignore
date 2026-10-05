@@ -11,6 +11,14 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+.env
+.env.*
+!.env.example
+blockchain/artifacts/
+blockchain/cache/
+blockchain/deployments/*.json
+!blockchain/deployments/.gitkeep
+types/
 downloads/
 eggs/
 .eggs/

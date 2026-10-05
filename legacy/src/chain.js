@@ -1,9 +1,8 @@
-// Hash-linked ballot ledger.
+// LEGACY_PUBLIC_LOCAL_BALLOT_SIMULATION. This is not a blockchain or private ledger.
+// Hash-linked demo ledger.
 //
-// Every accepted ballot becomes a block whose hash commits to the previous
-// block, so any edit to an older vote invalidates every block after it.
-// The voter identifier is never stored: only a salted digest of it is, which
-// is enough to prove "one ballot per voter" without revealing who voted.
+// Each simulated ballot block stores plaintext candidateId/selections in
+// localStorage. The voter digest does not hide the ballot or prove personhood.
 
 const CHAIN_KEY = 'evoting_ledger_chain'
 const VOTER_SALT = 'ballotledger::v1::voter'
@@ -14,7 +13,7 @@ const GENESIS_PREVIOUS = '0'.repeat(64)
 // belong to the original election, which keeps this id in the registry.
 export const LEGACY_ELECTION_ID = 'general'
 
-// Non-cryptographic digest used only when Web Crypto is unavailable
+// LEGACY ONLY: non-cryptographic digest used when Web Crypto is unavailable
 // (for example a plain-http preview host, where crypto.subtle is undefined).
 function fallbackHash(input) {
   let h1 = 0x811c9dc5

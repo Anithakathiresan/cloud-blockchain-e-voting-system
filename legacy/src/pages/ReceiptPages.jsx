@@ -189,8 +189,8 @@ export function ReceiptPage({ id }) {
         )}
 
         <p className="receipt-note">
-          <Fingerprint size={15} aria-hidden="true" /> The ledger stores only a salted digest of your register number, so this
-          receipt proves you voted without revealing your choice.
+          <Fingerprint size={15} aria-hidden="true" /> Legacy prototype receipt only. The simulated localStorage ledger includes
+          plaintext ballot selections; this receipt does not provide ballot secrecy or prove blockchain participation.
         </p>
 
         <div className="card-foot-actions">

@@ -1,0 +1,146 @@
+export const votingSystemAbi = [
+  {
+    type: 'function',
+    name: 'owner',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    type: 'function',
+    name: 'nextElectionId',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'createElection',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'name', type: 'string' },
+      { name: 'metadataURI', type: 'string' },
+    ],
+    outputs: [{ name: 'electionId', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'scheduleElection',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'electionId', type: 'uint256' },
+      { name: 'startsAt', type: 'uint64' },
+      { name: 'endsAt', type: 'uint64' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'addCandidate',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'electionId', type: 'uint256' },
+      { name: 'name', type: 'string' },
+      { name: 'metadataURI', type: 'string' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'setEligibility',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'electionId', type: 'uint256' },
+      { name: 'voter', type: 'address' },
+      { name: 'eligible', type: 'bool' },
+    ],
+    outputs: [],
+  },
+  ...(['startElection', 'pauseElection', 'resumeElection', 'endElection', 'finalizeElection'] as const).map((name) => ({
+    type: 'function' as const,
+    name,
+    stateMutability: 'nonpayable' as const,
+    inputs: [{ name: 'electionId', type: 'uint256' }],
+    outputs: [],
+  })),
+  {
+    type: 'function',
+    name: 'getElection',
+    stateMutability: 'view',
+    inputs: [{ name: 'electionId', type: 'uint256' }],
+    outputs: [
+      {
+        name: 'result',
+        type: 'tuple',
+        components: [
+          { name: 'id', type: 'uint256' },
+          { name: 'name', type: 'string' },
+          { name: 'metadataURI', type: 'string' },
+          { name: 'startsAt', type: 'uint64' },
+          { name: 'endsAt', type: 'uint64' },
+          { name: 'status', type: 'uint8' },
+          { name: 'totalVotes', type: 'uint256' },
+          { name: 'finalizedAt', type: 'uint64' },
+        ],
+      },
+    ],
+  },
+  {
+    type: 'function',
+    name: 'getElectionStatus',
+    stateMutability: 'view',
+    inputs: [{ name: 'electionId', type: 'uint256' }],
+    outputs: [{ name: '', type: 'uint8' }],
+  },
+  {
+    type: 'function',
+    name: 'getCandidates',
+    stateMutability: 'view',
+    inputs: [{ name: 'electionId', type: 'uint256' }],
+    outputs: [
+      {
+        name: 'result',
+        type: 'tuple[]',
+        components: [
+          { name: 'id', type: 'uint256' },
+          { name: 'name', type: 'string' },
+          { name: 'metadataURI', type: 'string' },
+        ],
+      },
+    ],
+  },
+  {
+    type: 'function',
+    name: 'hasVoted',
+    stateMutability: 'view',
+    inputs: [{ name: 'electionId', type: 'uint256' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+  {
+    type: 'function',
+    name: 'isEligible',
+    stateMutability: 'view',
+    inputs: [{ name: 'electionId', type: 'uint256' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+  {
+    type: 'function',
+    name: 'getResults',
+    stateMutability: 'view',
+    inputs: [{ name: 'electionId', type: 'uint256' }],
+    outputs: [
+      { name: 'totalVotes', type: 'uint256' },
+      { name: 'finalizedAt', type: 'uint64' },
+      {
+        name: 'result',
+        type: 'tuple[]',
+        components: [
+          { name: 'id', type: 'uint256' },
+          { name: 'name', type: 'string' },
+          { name: 'metadataURI', type: 'string' },
+          { name: 'voteCount', type: 'uint256' },
+        ],
+      },
+    ],
+  },
+] as const

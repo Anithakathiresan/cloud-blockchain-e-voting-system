@@ -6,14 +6,35 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "hardhat test",
+    "contracts:compile": "hardhat compile",
+    "contracts:test": "hardhat test",
+    "contracts:node": "hardhat node",
+    "contracts:deploy:local": "hardhat run blockchain/scripts/deploy.js --network localhost",
+    "contracts:deploy:sepolia": "hardhat run blockchain/scripts/deploy.js --network sepolia",
+    "contracts:demo": "hardhat run blockchain/scripts/seed-demo.js --network localhost",
+    "verify-election": "node --experimental-strip-types scripts/verify-election.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@openzeppelin/contracts": "^5.6.1",
+    "@tanstack/react-query": "^5.104.0",
     "@vitejs/plugin-react": "latest",
     "lucide-react": "latest",
-    "vite": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "viem": "^2.56.9",
+    "vite": "latest",
+    "wagmi": "^3.7.7"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^4.0.0",
+    "@types/node": "^26.6.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "dotenv": "^18.0.4",
+    "hardhat": "^3.18.0",
+    "typescript": "^5.9.3"
+  }
 }

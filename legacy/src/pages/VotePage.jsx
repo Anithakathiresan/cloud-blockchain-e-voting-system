@@ -1,3 +1,4 @@
+// LEGACY DEMO ONLY. Choices are stored in plaintext localStorage, not privately.
 // The ballot: 1 select → 2 review → 3 confirm (dialog) → 4 receipt.
 // Selections adapt to the election's method: one radio per position, a
 // capped set of checkboxes, or an ordered ranking.
@@ -531,7 +532,7 @@ export function ConfirmationPage({ id }) {
           <CheckCircle2 size={40} />
         </span>
         <h2>{t.uiVoteRecorded}</h2>
-        <p className="muted">Thank you for voting in {election.title}. Your choice stays confidential.</p>
+        <p className="muted">Legacy prototype only: choices are stored in browser localStorage and are not confidential.</p>
 
         {!receipt && !receiptsReady ? (
           <p className="muted">
